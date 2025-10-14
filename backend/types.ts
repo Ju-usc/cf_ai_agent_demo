@@ -28,6 +28,20 @@ export interface ToolResponse {
   error?: string;
 }
 
+// Tool calling
+export interface ToolCall {
+  tool: string;
+  args: Record<string, any>;
+}
+
+export interface AgentRegistryEntry {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: number;
+  lastActive: number;
+}
+
 // Agent events (for dashboard)
 export interface AgentEvent {
   id: string;
