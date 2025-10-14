@@ -1,0 +1,159 @@
+## AGENT RULES
+This file contains the rules and guidelines for the agents.
+Please follow these rules and guidelines when interacting with the user and the code.
+
+## Useful Docs
+
+Start with README.md for the high-level tour.
+
+> Architecture evolves. Always cross-check /docs for current truth.
+
+See also:
+- `/docs/ARCHITECTURE.md` - System design
+- `/docs/CLOUDFLARE_TECH_STACK.md` - Tech stack research
+- `/docs/MVP_PLAN.md` - Implementation roadmap
+---
+
+## Dev Setup & Common Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Create D1 database (one-time)
+wrangler d1 create medical-innovation-db
+# Copy database_id to wrangler.toml
+
+# Initialize database schema
+npm run db:init
+
+# Create R2 bucket (one-time)
+wrangler r2 bucket create medical-innovation-files
+
+# Start local development server
+npm run dev
+
+# Deploy to Cloudflare
+npm run deploy
+```
+
+---
+
+## Quick Iteration Mode
+
+* **Local dev server**: `npm run dev` - fastest loop for testing
+* **wrangler tail**: `wrangler tail` - real-time logs from deployed worker
+* **Direct curl**: Test endpoints without UI
+* **Unit tests**: Mock Durable Objects, test tools in isolation
+
+\`\`\`bash
+# Send a test chat message
+curl -X POST http://localhost:8787/api/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{"message":"Test"}'
+
+# Health check
+curl http://localhost:8787/health
+
+# Tail deployed worker logs
+wrangler tail
+\`\`\`
+
+---
+
+## Testing Strategy
+
+* **Default:** Test tools and utilities without network calls
+* **Mock external APIs:** Perplexity, email service responses
+* **Integration:** Test full Durable Object → Workers AI → Response flow locally
+* **E2E:** Deploy to staging, test real multi-agent orchestration
+
+Keep most tests fast and deterministic. Save integration for critical flows.
+
+---
+
+## Coding conventions (enforced by review) (fix this for our usecase)
+
+* Follow contracts in `docs/ARCHITECTURE.md` - do not add ad-hoc tools or fields
+* Single-shape I/O per function/module; validate at boundaries, **fail fast**
+* Keep modules small; avoid globals; pass dependencies explicitly (via Env)
+* TypeScript types are contracts - trust them, avoid defensive checks
+* Reuse helpers/utilities; delete duplicate code
+* Cloudflare Workers are stateless - state lives in Durable Objects only
+
+---
+
+## Writing style 
+
+- Avoid long bullet lists.
+- Write in plain, natural English. Be conversational.
+- Do not use overly complex words or structures.
+- Write in complete, clear sentences.
+- Speak like a Senior Developer mentoring a junior engineer.
+- Provide enough context for the User to understand, but keep explanations short.
+- Always state your assumptions and conclusions clearly.
+  
+---
+
+## Help the user learn
+
+- when coding, always explain what you are doing and why
+- your job is to help the user learn & upskill himself, above all
+- assume the user is an intelligent, tech savvy person -- but do not assume he knows the details
+- explain everything clearly, simply, in easy-to-understand language with a simple example or analogy may be helpful to understand intuitively.
+- Always consider MULTIPLE different approaches, and analyze their tradeoffs just like a Senior Developer would
+
+---
+
+## Repo Pointers (Orientation)
+
+* `backend/` — Backend (Cloudflare Workers + Durable Objects)
+  * `agents/` — Agent classes (Interaction + Research)
+  * `tools/` — Agent tool implementations (to be added)
+  * `db/` — Database schemas
+* `frontend/` — React app (to be added, deployed via Cloudflare Pages)
+* `docs/` — Architecture, tech stack, MVP plan
+* `wrangler.toml` — Cloudflare config
+* `AGENTS.md` — This file - your guidelines
+
+
+---
+
+## Agentic Coding Workflow Guidlines
+
+### Durable Objects
+* Each agent = one Durable Object class instance
+* Persistent memory via `this.ctx.storage`
+* Single-threaded (no race conditions)
+* Always extend `DurableObject<Env>` and call `super(ctx, env)`
+
+- Operating on a task basis. Store all intermediate context in markdown files in tasks/<task-id>/ folders.
+- Use semantic task id slugs
+
+1. Research
+
+- Find existing patterns in this codebase
+- Search internet, official docs, mcp tools if relevant (PREFER using nia tools than relying only on generic web search)
+- Start by asking follow up questions to set the direction of research
+- Report reusable findings in research.md file
+
+2. Planning
+
+- Read the research.md in tasks for <task-id>.
+- Based on the research come up with a plan for implementing the user request. We should reuse existing patterns, components and code where possible.
+- If needed, ask clarifying questions to user to understand the scope of the task
+- Write the comprehensive plan to plan.md. The plan should include all context required for an engineer to implement the feature.
+- Consider multiple design choices with their tradeoffs.
+- Wait for user to read and approve the plan
+
+3. Implementation
+
+- Read. plan.md and create a todo-list with all items, then execute on the plan.
+- Go for as long as possible. If ambiguous, leave all questions to the end and group them.
+
+4. Verification
+
+- Once implementation is complete, you must verify that the implementation meets the requirements and is free of bugs.
+- Do this by running tests, making tool calls and checking the output.
+- If there are any issues, go back to the implementation step and make the necessary changes.
+- Once verified, update the task status to "verified".

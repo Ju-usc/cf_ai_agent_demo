@@ -1,0 +1,39 @@
+name = "medical-innovation-agent"
+main = "backend/index.ts"
+compatibility_date = "2024-10-14"
+
+[observability]
+enabled = true
+
+# Workers AI binding
+[[ai]]
+binding = "AI"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "medical-innovation-db"
+database_id = "" # Fill after: wrangler d1 create medical-innovation-db
+
+# R2 Storage
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "medical-innovation-files"
+
+# Durable Objects
+[[durable_objects.bindings]]
+name = "INTERACTION_AGENT"
+class_name = "InteractionAgent"
+
+[[durable_objects.bindings]]
+name = "RESEARCH_AGENT"
+class_name = "ResearchAgent"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["InteractionAgent", "ResearchAgent"]
+
+# Environment variables (add to .dev.vars for local)
+[vars]
+ENVIRONMENT = "development"
+

@@ -1,0 +1,11 @@
+# Frontend (Cloudflare Pages)
+
+React app for chat interface and debug dashboard.
+
+Structure to be added:
+- `/pages` - Chat and Dashboard pages
+- `/components` - Reusable UI components
+- `/hooks` - React hooks for WebSocket, agent state
+
+Will be built separately and deployed to Cloudflare Pages.
+

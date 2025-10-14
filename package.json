@@ -1,0 +1,19 @@
+{
+  "name": "medical-innovation-agent",
+  "version": "1.0.0",
+  "description": "Multi-agent medical research system on Cloudflare",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute medical-innovation-db --file=./backend/db/schema.sql",
+    "db:migrations": "wrangler d1 migrations apply medical-innovation-db"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20241022.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "wrangler": "^4.42.2"
+  }
+}
