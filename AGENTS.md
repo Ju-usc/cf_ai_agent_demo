@@ -92,7 +92,7 @@ Keep most tests fast and deterministic. Save integration for critical flows.
 - Speak like a Senior Developer mentoring a junior engineer.
 - Provide enough context for the User to understand, but keep explanations short.
 - Always state your assumptions and conclusions clearly.
-  
+
 ---
 
 ## Help the user learn
