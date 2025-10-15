@@ -7,6 +7,13 @@ export interface Env {
   RESEARCH_AGENT: DurableObjectNamespace;
   PERPLEXITY_API_KEY?: string;
   EMAIL_API_KEY?: string;
+  // AI provider config
+  AI_PROVIDER?: 'workers-ai' | 'openai' | 'anthropic';
+  WORKERS_AI_MODEL?: string;
+  OPENAI_API_KEY?: string;
+  OPENAI_MODEL?: string;
+  ANTHROPIC_API_KEY?: string;
+  ANTHROPIC_MODEL?: string;
 }
 
 // Agent types

@@ -7,9 +7,12 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:init": "wrangler d1 execute medical-innovation-db --file=./backend/db/schema.sql",
-    "db:migrations": "wrangler d1 migrations apply medical-innovation-db"
+    "db:migrations": "wrangler d1 migrations apply medical-innovation-db",
+    "test": "vitest"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.29",
+    "@ai-sdk/openai": "^2.0.52",
     "@cloudflare/workers-types": "^4.20241022.0",
     "agents": "^0.2.13",
     "ai": "^5.0.68",

@@ -1,9 +1,9 @@
 import { Agent } from 'agents';
-import { createWorkersAI } from 'workers-ai-provider';
 import { generateText, tool } from 'ai';
 import { z } from 'zod';
 import type { Env, Message } from '../types';
 import { VirtualFs } from '../tools/file_system';
+import { createChatModel } from './modelFactory';
 
 type ResearchState = {
   messages: Message[];
@@ -62,9 +62,7 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
     this.setState({ ...this.state, messages: [...(this.state?.messages ?? []), { role: 'user', content: message }] });
 
     try {
-      // Initialize Workers AI provider
-      const workersai = createWorkersAI({ binding: this.env.AI });
-      const model = workersai.chat('@cf/meta/llama-3.3-70b-instruct-fp8-fast' as any);
+      const model = createChatModel(this.env);
 
       // Define tools explicitly for visibility and readability
       const tools = {
