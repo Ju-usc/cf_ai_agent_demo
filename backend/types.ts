@@ -61,3 +61,13 @@ export interface Trigger {
   fire_at: number;
 }
 
+// Ambient module declarations for external SDKs to satisfy TypeScript
+// without requiring full type packages during initial refactor.
+
+// AI SDK Tool Definition
+export interface AiSdkToolDef {
+  description: string;
+  parameters: any; // Zod schema object
+  execute: (args: any) => Promise<any>;
+}
+

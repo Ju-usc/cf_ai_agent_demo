@@ -10,10 +10,15 @@
     "db:migrations": "wrangler d1 migrations apply medical-innovation-db"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20241022.0"
+    "@cloudflare/workers-types": "^4.20241022.0",
+    "ai": "^3.3.9",
+    "workers-ai-provider": "^0.2.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.6.0",
     "typescript": "^5.6.3",
+    "vitest": "~3.0.0",
     "wrangler": "^4.42.2"
   }
 }
