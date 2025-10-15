@@ -1,7 +1,7 @@
 import { AIChatAgent } from 'agents/ai-chat-agent';
 import { streamText, type StreamTextOnFinishCallback, type ToolSet } from 'ai';
 import type { Env } from '../types';
-import { interactionTools } from '../tools/tools';
+import { tools as allTools } from '../tools/tools';
 import { createAgentManagementTools } from '../tools/agent_management';
 import { createChatModel } from './modelFactory';
 
@@ -12,24 +12,23 @@ export class InteractionAgent extends AIChatAgent<Env> {
   ): Promise<Response | undefined> {
     const model = createChatModel(this.env);
     
-    // Wire up execute functions for tools
+    // Wire up execute functions for agent management tools
     const agentMgr = createAgentManagementTools(this.env, this.ctx.storage);
     const tools = {
-      ...interactionTools,
       create_agent: {
-        ...interactionTools.create_agent,
+        ...allTools.create_agent,
         execute: async ({ name, description, message }: { name: string; description: string; message: string }) => {
           return agentMgr.create_agent(name, description, message);
         },
       },
       list_agents: {
-        ...interactionTools.list_agents,
+        ...allTools.list_agents,
         execute: async () => {
           return agentMgr.list_agents();
         },
       },
       message_agent: {
-        ...interactionTools.message_agent,
+        ...allTools.message_agent,
         execute: async ({ agent_id, message }: { agent_id: string; message: string }) => {
           return agentMgr.message_agent(agent_id, message);
         },

@@ -1,19 +1,21 @@
 /**
- * Tool definitions for agents
+ * Unified tool definitions
  * 
  * Following Cloudflare agents-starter pattern:
- * - Tools defined in separate file for clarity
- * - Imported and initialized in agents
+ * - All tools defined in one place (single source of truth)
+ * - Agents import only the tools they need
  * - Execute functions wired up per-agent with dependencies
+ * - No duplication if tools overlap between agents
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
 
 /**
- * InteractionAgent tools - agent management
+ * All available tools - agents can selectively import what they need
  */
-export const interactionTools = {
+export const tools = {
+  // Agent management tools
   create_agent: tool({
     description: 'Create a new research agent for a specific domain',
     inputSchema: z.object({
@@ -38,12 +40,8 @@ export const interactionTools = {
     }),
     // Execute wired up in agent
   }),
-};
 
-/**
- * ResearchAgent tools - file operations and relay
- */
-export const researchTools = {
+  // File system tools
   write_file: tool({
     description: 'Write content to a file in the agent workspace',
     inputSchema: z.object({
@@ -69,6 +67,7 @@ export const researchTools = {
     // Execute wired up in agent
   }),
 
+  // Communication tools
   send_message: tool({
     description: 'Send a status update back to the InteractionAgent',
     inputSchema: z.object({
