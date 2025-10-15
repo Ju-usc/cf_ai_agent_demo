@@ -45,18 +45,14 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
     this.setState({ ...this.state, name, description });
     // Use standardized path as per architecture docs
     this.fs = new VirtualFs(this.env.R2, `memory/research_agents/${name}/`);
-    
-    const systemPrimedMessages: Message[] = [...(this.state?.messages ?? []), {
-      role: 'system',
-      content: `You are a specialized medical research agent for: ${description}`,
-    }];
-    
-    const primedMessages: Message[] = [...systemPrimedMessages, {
-      role: 'user',
-      content: message,
-    }];
 
-    this.setState({ ...this.state, messages: primedMessages });
+    this.setState({
+      ...this.state,
+      messages: [
+        { role: 'system', content: `You are a specialized medical research agent for: ${description}` },
+        { role: 'user', content: message },
+      ],
+    });
 
     return Response.json({ success: true });
   }
