@@ -1,102 +1,80 @@
-import { tool, type ToolSet } from 'ai';
+/**
+ * Tool definitions for agents
+ * 
+ * Following Cloudflare agents-starter pattern:
+ * - Tools defined in separate file for clarity
+ * - Imported and initialized in agents
+ * - Execute functions wired up per-agent with dependencies
+ */
+
+import { tool } from 'ai';
 import { z } from 'zod';
-import type { Env } from '../types';
-import type { VirtualFs } from './file_system';
-import { createAgentManagementTools } from './agent_management';
 
 /**
- * Creates tools for InteractionAgent
+ * InteractionAgent tools - agent management
  */
-export function createInteractionTools(env: Env, storage: DurableObjectState['storage']): ToolSet {
-  const agentMgr = createAgentManagementTools(env, storage);
-
-  return {
-    create_agent: tool({
-      description: 'Create a new research agent for a specific domain',
-      inputSchema: z.object({
-        name: z.string().describe('Agent name (e.g., duchenne_md_research)'),
-        description: z.string().describe('What this agent researches'),
-        message: z.string().describe('Initial research task'),
-      }),
-      execute: async ({ name, description, message }) => {
-        return agentMgr.create_agent(name, description, message);
-      },
+export const interactionTools = {
+  create_agent: tool({
+    description: 'Create a new research agent for a specific domain',
+    inputSchema: z.object({
+      name: z.string().describe('Agent name (e.g., duchenne_md_research)'),
+      description: z.string().describe('What this agent researches'),
+      message: z.string().describe('Initial research task'),
     }),
+    // Execute wired up in agent
+  }),
 
-    list_agents: tool({
-      description: 'List all known research agents',
-      inputSchema: z.object({}),
-      execute: async () => {
-        return agentMgr.list_agents();
-      },
-    }),
+  list_agents: tool({
+    description: 'List all known research agents',
+    inputSchema: z.object({}),
+    // Execute wired up in agent
+  }),
 
-    message_agent: tool({
-      description: 'Send a message to a specific research agent',
-      inputSchema: z.object({
-        agent_id: z.string().describe('The ID of the agent'),
-        message: z.string().describe('Message to send'),
-      }),
-      execute: async ({ agent_id, message }) => {
-        return agentMgr.message_agent(agent_id, message);
-      },
+  message_agent: tool({
+    description: 'Send a message to a specific research agent',
+    inputSchema: z.object({
+      agent_id: z.string().describe('The ID of the agent'),
+      message: z.string().describe('Message to send'),
     }),
-  };
-}
+    // Execute wired up in agent
+  }),
+};
 
 /**
- * Creates tools for ResearchAgent
+ * ResearchAgent tools - file operations and relay
  */
-export function createResearchTools(
-  fs: VirtualFs,
-  agentName: string,
-  relayCallback: (message: string) => Promise<void>
-): ToolSet {
-  return {
-    write_file: tool({
-      description: 'Write content to a file in the agent workspace',
-      inputSchema: z.object({
-        path: z.string().describe('Relative path within agent workspace'),
-        content: z.string().describe('Text content to write'),
-      }),
-      execute: async ({ path, content }) => {
-        await fs.writeFile(path, content, { author: agentName });
-        return { ok: true };
-      },
+export const researchTools = {
+  write_file: tool({
+    description: 'Write content to a file in the agent workspace',
+    inputSchema: z.object({
+      path: z.string().describe('Relative path within agent workspace'),
+      content: z.string().describe('Text content to write'),
     }),
+    // Execute wired up in agent
+  }),
 
-    read_file: tool({
-      description: 'Read content from a file in the agent workspace',
-      inputSchema: z.object({
-        path: z.string().describe('Relative path within agent workspace'),
-      }),
-      execute: async ({ path }) => {
-        const text = await fs.readFile(path);
-        return { content: text };
-      },
+  read_file: tool({
+    description: 'Read content from a file in the agent workspace',
+    inputSchema: z.object({
+      path: z.string().describe('Relative path within agent workspace'),
     }),
+    // Execute wired up in agent
+  }),
 
-    list_files: tool({
-      description: 'List files in a directory of the agent workspace',
-      inputSchema: z.object({
-        dir: z.string().optional().describe('Relative directory within agent workspace'),
-      }),
-      execute: async ({ dir }) => {
-        const files = await fs.listFiles(dir);
-        return { files };
-      },
+  list_files: tool({
+    description: 'List files in a directory of the agent workspace',
+    inputSchema: z.object({
+      dir: z.string().optional().describe('Relative directory within agent workspace'),
     }),
+    // Execute wired up in agent
+  }),
 
-    send_message: tool({
-      description: 'Send a status update back to the InteractionAgent',
-      inputSchema: z.object({
-        message: z.string().describe('Status or summary to report back'),
-      }),
-      execute: async ({ message }) => {
-        await relayCallback(message);
-        return { ok: true };
-      },
+  send_message: tool({
+    description: 'Send a status update back to the InteractionAgent',
+    inputSchema: z.object({
+      message: z.string().describe('Status or summary to report back'),
     }),
-  };
-}
+    // Execute wired up in agent
+  }),
+};
 

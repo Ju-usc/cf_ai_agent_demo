@@ -2,7 +2,7 @@ import { Agent } from 'agents';
 import { generateText } from 'ai';
 import type { Env, Message } from '../types';
 import { VirtualFs } from '../tools/file_system';
-import { createResearchTools } from '../tools/tools';
+import { researchTools } from '../tools/tools';
 import { createChatModel } from './modelFactory';
 
 type ResearchState = {
@@ -57,11 +57,39 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
 
     try {
       const model = createChatModel(this.env);
-      const tools = createResearchTools(
-        this.ensureFs(),
-        this.state?.name || 'research-agent',
-        (msg) => this.bestEffortRelay(msg)
-      );
+      
+      // Wire up execute functions for tools
+      const tools = {
+        ...researchTools,
+        write_file: {
+          ...researchTools.write_file,
+          execute: async ({ path, content }: { path: string; content: string }) => {
+            await this.ensureFs().writeFile(path, content, { author: this.state?.name || 'research-agent' });
+            return { ok: true };
+          },
+        },
+        read_file: {
+          ...researchTools.read_file,
+          execute: async ({ path }: { path: string }) => {
+            const text = await this.ensureFs().readFile(path);
+            return { content: text };
+          },
+        },
+        list_files: {
+          ...researchTools.list_files,
+          execute: async ({ dir }: { dir?: string }) => {
+            const files = await this.ensureFs().listFiles(dir);
+            return { files };
+          },
+        },
+        send_message: {
+          ...researchTools.send_message,
+          execute: async ({ message }: { message: string }) => {
+            await this.bestEffortRelay(message);
+            return { ok: true };
+          },
+        },
+      };
 
       const systemPrompt = 
         'You are a specialized ResearchAgent. You can read/write files and report back to the InteractionAgent.';

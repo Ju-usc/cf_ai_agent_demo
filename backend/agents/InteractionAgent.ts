@@ -1,7 +1,8 @@
 import { AIChatAgent } from 'agents/ai-chat-agent';
 import { streamText, type StreamTextOnFinishCallback, type ToolSet } from 'ai';
 import type { Env } from '../types';
-import { createInteractionTools } from '../tools/tools';
+import { interactionTools } from '../tools/tools';
+import { createAgentManagementTools } from '../tools/agent_management';
 import { createChatModel } from './modelFactory';
 
 export class InteractionAgent extends AIChatAgent<Env> {
@@ -10,7 +11,30 @@ export class InteractionAgent extends AIChatAgent<Env> {
     _options?: { abortSignal?: AbortSignal }
   ): Promise<Response | undefined> {
     const model = createChatModel(this.env);
-    const tools = createInteractionTools(this.env, this.ctx.storage);
+    
+    // Wire up execute functions for tools
+    const agentMgr = createAgentManagementTools(this.env, this.ctx.storage);
+    const tools = {
+      ...interactionTools,
+      create_agent: {
+        ...interactionTools.create_agent,
+        execute: async ({ name, description, message }: { name: string; description: string; message: string }) => {
+          return agentMgr.create_agent(name, description, message);
+        },
+      },
+      list_agents: {
+        ...interactionTools.list_agents,
+        execute: async () => {
+          return agentMgr.list_agents();
+        },
+      },
+      message_agent: {
+        ...interactionTools.message_agent,
+        execute: async ({ agent_id, message }: { agent_id: string; message: string }) => {
+          return agentMgr.message_agent(agent_id, message);
+        },
+      },
+    };
 
     const systemPrompt =
       'You are the Interaction Agent for a medical innovation research system. ' +
@@ -20,7 +44,7 @@ export class InteractionAgent extends AIChatAgent<Env> {
       model,
       system: systemPrompt,
       messages: this.messages as any,
-      tools,
+      tools: tools as ToolSet,
       onFinish,
     });
 
