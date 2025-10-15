@@ -26,13 +26,6 @@ export default {
       if (routed) return routed;
     }
 
-    // Back-compat: map /api/chat -> /agents/interaction-agent/default/chat
-    if (url.pathname === '/api/chat') {
-      const newUrl = new URL(request.url);
-      newUrl.pathname = '/agents/interaction-agent/default/chat';
-      const routed = await routeAgentRequest(new Request(newUrl.toString(), request), env, { cors: true });
-      if (routed) return routed;
-    }
 
     // Health check
     if (url.pathname === '/health') {
