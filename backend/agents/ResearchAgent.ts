@@ -1,7 +1,5 @@
 import { Agent } from 'agents';
-// @ts-expect-error External provider types provided at runtime
 import { createWorkersAI } from 'workers-ai-provider';
-// @ts-expect-error Using generic AI SDK types
 import { generateText, tool } from 'ai';
 import { z } from 'zod';
 import type { Env, Message } from '../types';
@@ -48,17 +46,17 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
     // Use standardized path as per architecture docs
     this.fs = new VirtualFs(this.env.R2, `memory/research_agents/${name}/`);
     
-    const messages1 = [...(this.state?.messages ?? []), {
+    const systemPrimedMessages: Message[] = [...(this.state?.messages ?? []), {
       role: 'system',
       content: `You are a specialized medical research agent for: ${description}`,
     }];
     
-    const messages2 = [...messages1, {
+    const primedMessages: Message[] = [...systemPrimedMessages, {
       role: 'user',
       content: message,
     }];
 
-    this.setState({ ...this.state, messages: messages2 });
+    this.setState({ ...this.state, messages: primedMessages });
 
     return Response.json({ success: true });
   }
@@ -70,13 +68,13 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
     try {
       // Initialize Workers AI provider
       const workersai = createWorkersAI({ binding: this.env.AI });
-      const model = workersai('@cf/meta/llama-3.3-70b-instruct-fp8-fast');
+      const model = workersai.chat('@cf/meta/llama-3.3-70b-instruct-fp8-fast' as any);
 
       // Define tools explicitly for visibility and readability
       const tools = {
         write_file: tool({
           description: 'Write content to a file in the agent workspace',
-          parameters: z.object({
+          inputSchema: z.object({
             path: z.string().describe('Relative path within agent workspace'),
             content: z.string().describe('Text content to write'),
           }),
@@ -88,7 +86,7 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
         
         read_file: tool({
           description: 'Read content from a file in the agent workspace',
-          parameters: z.object({
+          inputSchema: z.object({
             path: z.string().describe('Relative path within agent workspace'),
           }),
           execute: async ({ path }: { path: string }) => {
@@ -99,7 +97,7 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
         
         list_files: tool({
           description: 'List files in a directory of the agent workspace',
-          parameters: z.object({
+          inputSchema: z.object({
             dir: z.string().optional().describe('Relative directory within agent workspace'),
           }),
           execute: async ({ dir }: { dir?: string }) => {
@@ -110,7 +108,7 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
         
         send_message: tool({
           description: 'Send a status update back to the InteractionAgent',
-          parameters: z.object({
+          inputSchema: z.object({
             message: z.string().describe('Status or summary to report back'),
           }),
           execute: async ({ message }: { message: string }) => {
@@ -129,7 +127,7 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
         messages: [
           { role: 'system', content: systemPrompt },
           ...(this.state?.messages ?? []),
-        ],
+        ] as any,
         tools,
       });
 
@@ -143,7 +141,7 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
     } catch (error: any) {
       console.error('ResearchAgent handleMessage error:', error);
       const errorMessage = 'Error processing research request.';
-      this.messages.push({ role: 'assistant', content: errorMessage });
+      this.setState({ ...this.state, messages: [...(this.state?.messages ?? []), { role: 'assistant', content: errorMessage }] });
       return Response.json({ message: errorMessage, error: error.message }, { status: 500 });
     }
   }

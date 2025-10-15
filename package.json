@@ -12,14 +12,14 @@
   "dependencies": {
     "@cloudflare/workers-types": "^4.20241022.0",
     "agents": "^0.2.13",
-    "ai": "^3.3.9",
-    "workers-ai-provider": "^0.2.2",
+    "ai": "^5.0.68",
+    "workers-ai-provider": "^2.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.6.0",
+    "@cloudflare/vitest-pool-workers": "^0.9.12",
     "typescript": "^5.6.3",
-    "vitest": "~3.0.0",
+    "vitest": "3.2.4",
     "wrangler": "^4.42.2"
   }
 }

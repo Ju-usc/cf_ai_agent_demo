@@ -1,7 +1,5 @@
 import { Agent } from 'agents';
-// @ts-expect-error External provider types provided at runtime
 import { createWorkersAI } from 'workers-ai-provider';
-// @ts-expect-error Using generic AI SDK types
 import { generateText, tool } from 'ai';
 import { z } from 'zod';
 import type { Env, Message } from '../types';
@@ -43,13 +41,13 @@ export class InteractionAgent extends Agent<Env, InteractionState> {
 
     try {
       const workersai = createWorkersAI({ binding: this.env.AI });
-      const model = workersai('@cf/meta/llama-3.3-70b-instruct-fp8-fast');
+      const model = workersai.chat('@cf/meta/llama-3.3-70b-instruct-fp8-fast' as any);
       const agentMgr = createAgentManagementTools(this.env, this.ctx.storage);
 
       const tools = {
         create_agent: tool({
           description: 'Create a new research agent for a specific domain',
-          parameters: z.object({
+          inputSchema: z.object({
             name: z.string().describe('Agent name (e.g., duchenne_md_research)'),
             description: z.string().describe('What this agent researches'),
             message: z.string().describe('Initial research task'),
@@ -61,7 +59,7 @@ export class InteractionAgent extends Agent<Env, InteractionState> {
 
         list_agents: tool({
           description: 'List all known research agents',
-          parameters: z.object({}),
+          inputSchema: z.object({}),
           execute: async () => {
             return agentMgr.list_agents();
           },
@@ -69,7 +67,7 @@ export class InteractionAgent extends Agent<Env, InteractionState> {
 
         message_agent: tool({
           description: 'Send a message to a specific research agent',
-          parameters: z.object({
+          inputSchema: z.object({
             agent_id: z.string().describe('The ID of the agent'),
             message: z.string().describe('Message to send'),
           }),
@@ -90,7 +88,7 @@ export class InteractionAgent extends Agent<Env, InteractionState> {
 
       const result = await generateText({
         model,
-        messages,
+        messages: messages as any,
         tools,
       });
 
