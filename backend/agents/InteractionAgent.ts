@@ -1,8 +1,7 @@
 import { AIChatAgent } from 'agents/ai-chat-agent';
-import { streamText, tool, type StreamTextOnFinishCallback, type ToolSet } from 'ai';
-import { z } from 'zod';
+import { streamText, type StreamTextOnFinishCallback, type ToolSet } from 'ai';
 import type { Env } from '../types';
-import { createAgentManagementTools } from '../tools/agent_management';
+import { createInteractionTools } from '../tools/tools';
 import { createChatModel } from './modelFactory';
 
 export class InteractionAgent extends AIChatAgent<Env> {
@@ -11,40 +10,7 @@ export class InteractionAgent extends AIChatAgent<Env> {
     _options?: { abortSignal?: AbortSignal }
   ): Promise<Response | undefined> {
     const model = createChatModel(this.env);
-    const agentMgr = createAgentManagementTools(this.env, this.ctx.storage);
-
-    const tools: ToolSet = {
-      create_agent: tool({
-        description: 'Create a new research agent for a specific domain',
-        inputSchema: z.object({
-          name: z.string().describe('Agent name (e.g., duchenne_md_research)'),
-          description: z.string().describe('What this agent researches'),
-          message: z.string().describe('Initial research task'),
-        }),
-        execute: async ({ name, description, message }: { name: string; description: string; message: string }) => {
-          return agentMgr.create_agent(name, description, message);
-        },
-      }),
-
-      list_agents: tool({
-        description: 'List all known research agents',
-        inputSchema: z.object({}),
-        execute: async () => {
-          return agentMgr.list_agents();
-        },
-      }),
-
-      message_agent: tool({
-        description: 'Send a message to a specific research agent',
-        inputSchema: z.object({
-          agent_id: z.string().describe('The ID of the agent'),
-          message: z.string().describe('Message to send'),
-        }),
-        execute: async ({ agent_id, message }: { agent_id: string; message: string }) => {
-          return agentMgr.message_agent(agent_id, message);
-        },
-      }),
-    };
+    const tools = createInteractionTools(this.env, this.ctx.storage);
 
     const systemPrompt =
       'You are the Interaction Agent for a medical innovation research system. ' +

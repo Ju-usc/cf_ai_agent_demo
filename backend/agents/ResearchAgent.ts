@@ -1,8 +1,8 @@
 import { Agent } from 'agents';
-import { generateText, tool } from 'ai';
-import { z } from 'zod';
+import { generateText } from 'ai';
 import type { Env, Message } from '../types';
 import { VirtualFs } from '../tools/file_system';
+import { createResearchTools } from '../tools/tools';
 import { createChatModel } from './modelFactory';
 
 type ResearchState = {
@@ -24,14 +24,8 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
         return this.handleMessage(request);
       case '/info':
         return this.getInfo();
-      case '/write_file':
-        return this.writeFile(request);
-      case '/read_file':
-        return this.readFile(request);
-      case '/list_files':
-        return this.listFiles(request);
       default:
-        return new Response('Not found', { status: 404 });
+        return super.onRequest(request);
     }
   }
 
@@ -63,54 +57,11 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
 
     try {
       const model = createChatModel(this.env);
-
-      // Define tools explicitly for visibility and readability
-      const tools = {
-        write_file: tool({
-          description: 'Write content to a file in the agent workspace',
-          inputSchema: z.object({
-            path: z.string().describe('Relative path within agent workspace'),
-            content: z.string().describe('Text content to write'),
-          }),
-          execute: async ({ path, content }: { path: string; content: string }) => {
-            await this.ensureFs().writeFile(path, content, { author: this.name || 'research-agent' });
-            return { ok: true };
-          },
-        }),
-        
-        read_file: tool({
-          description: 'Read content from a file in the agent workspace',
-          inputSchema: z.object({
-            path: z.string().describe('Relative path within agent workspace'),
-          }),
-          execute: async ({ path }: { path: string }) => {
-            const text = await this.ensureFs().readFile(path);
-            return { content: text };
-          },
-        }),
-        
-        list_files: tool({
-          description: 'List files in a directory of the agent workspace',
-          inputSchema: z.object({
-            dir: z.string().optional().describe('Relative directory within agent workspace'),
-          }),
-          execute: async ({ dir }: { dir?: string }) => {
-            const files = await this.ensureFs().listFiles(dir);
-            return { files };
-          },
-        }),
-        
-        send_message: tool({
-          description: 'Send a status update back to the InteractionAgent',
-          inputSchema: z.object({
-            message: z.string().describe('Status or summary to report back'),
-          }),
-          execute: async ({ message }: { message: string }) => {
-            await this.bestEffortRelay(message);
-            return { ok: true };
-          },
-        }),
-      };
+      const tools = createResearchTools(
+        this.ensureFs(),
+        this.state?.name || 'research-agent',
+        (msg) => this.bestEffortRelay(msg)
+      );
 
       const systemPrompt = 
         'You are a specialized ResearchAgent. You can read/write files and report back to the InteractionAgent.';
@@ -156,30 +107,6 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
     }
     return this.fs;
   }
-
-  private async writeFile(request: Request): Promise<Response> {
-    const { path, content } = await request.json<{ path: string; content: string }>();
-    const fs = this.ensureFs();
-    await fs.writeFile(path, content, { author: this.state?.name || 'research-agent' });
-    return Response.json({ ok: true });
-  }
-
-  private async readFile(request: Request): Promise<Response> {
-    const { path } = await request.json<{ path: string }>();
-    const fs = this.ensureFs();
-    const text = await fs.readFile(path);
-    if (text == null) return new Response('Not found', { status: 404 });
-    return Response.json({ content: text });
-  }
-
-  private async listFiles(request: Request): Promise<Response> {
-    const { dir } = await request.json<{ dir?: string }>();
-    const fs = this.ensureFs();
-    const files = await fs.listFiles(dir);
-    return Response.json({ files });
-  }
-
-  // Tool parsing and manual execution removed in favor of AI SDK tools auto-execution
 
   private async bestEffortRelay(message: string): Promise<void> {
     try {
