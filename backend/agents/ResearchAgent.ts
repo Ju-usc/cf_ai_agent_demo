@@ -1,4 +1,4 @@
-import { DurableObject } from 'cloudflare:workers';
+import { Agent } from 'agents';
 // @ts-expect-error External provider types provided at runtime
 import { createWorkersAI } from 'workers-ai-provider';
 // @ts-expect-error Using generic AI SDK types
@@ -7,19 +7,18 @@ import { z } from 'zod';
 import type { Env, Message } from '../types';
 import { VirtualFs } from '../tools/file_system';
 
-export class ResearchAgent extends DurableObject<Env> {
-  private messages: Message[] = [];
-  private name: string = '';
-  private description: string = '';
+type ResearchState = {
+  messages: Message[];
+  name: string;
+  description: string;
+};
+
+export class ResearchAgent extends Agent<Env, ResearchState> {
   private fs: VirtualFs | null = null;
+  initialState: ResearchState = { messages: [], name: '', description: '' };
 
-  constructor(ctx: DurableObjectState, env: Env) {
-    super(ctx, env);
-  }
-
-  async fetch(request: Request): Promise<Response> {
+  async onRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    
     switch (url.pathname) {
       case '/init':
         return this.initialize(request);
@@ -45,27 +44,28 @@ export class ResearchAgent extends DurableObject<Env> {
       message: string;
     }>();
 
-    this.name = name;
-    this.description = description;
+    this.setState({ ...this.state, name, description });
     // Use standardized path as per architecture docs
-    this.fs = new VirtualFs(this.env.R2, `memory/research_agents/${this.name}/`);
+    this.fs = new VirtualFs(this.env.R2, `memory/research_agents/${name}/`);
     
-    this.messages.push({
+    const messages1 = [...(this.state?.messages ?? []), {
       role: 'system',
       content: `You are a specialized medical research agent for: ${description}`,
-    });
+    }];
     
-    this.messages.push({
+    const messages2 = [...messages1, {
       role: 'user',
       content: message,
-    });
+    }];
+
+    this.setState({ ...this.state, messages: messages2 });
 
     return Response.json({ success: true });
   }
 
   private async handleMessage(request: Request): Promise<Response> {
     const { message } = await request.json<{ message: string }>();
-    this.messages.push({ role: 'user', content: message });
+    this.setState({ ...this.state, messages: [...(this.state?.messages ?? []), { role: 'user', content: message }] });
 
     try {
       // Initialize Workers AI provider
@@ -128,13 +128,13 @@ export class ResearchAgent extends DurableObject<Env> {
         model,
         messages: [
           { role: 'system', content: systemPrompt },
-          ...this.messages,
+          ...(this.state?.messages ?? []),
         ],
         tools,
       });
 
       const assistantMessage = result.text || 'Okay.';
-      this.messages.push({ role: 'assistant', content: assistantMessage });
+      this.setState({ ...this.state, messages: [...(this.state?.messages ?? []), { role: 'assistant', content: assistantMessage }] });
       
       // Relay message back to InteractionAgent
       await this.bestEffortRelay(assistantMessage);
@@ -150,16 +150,17 @@ export class ResearchAgent extends DurableObject<Env> {
 
   private async getInfo(): Promise<Response> {
     return Response.json({
-      name: this.name,
-      description: this.description,
-      messageCount: this.messages.length,
+      name: this.state?.name ?? '',
+      description: this.state?.description ?? '',
+      messageCount: (this.state?.messages ?? []).length,
     });
   }
 
   private ensureFs(): VirtualFs {
     if (!this.fs) {
       // Use standardized path as per architecture docs
-      this.fs = new VirtualFs(this.env.R2, `memory/research_agents/${this.name || 'unnamed'}/`);
+      const name = this.state?.name || 'unnamed';
+      this.fs = new VirtualFs(this.env.R2, `memory/research_agents/${name}/`);
     }
     return this.fs;
   }
@@ -167,7 +168,7 @@ export class ResearchAgent extends DurableObject<Env> {
   private async writeFile(request: Request): Promise<Response> {
     const { path, content } = await request.json<{ path: string; content: string }>();
     const fs = this.ensureFs();
-    await fs.writeFile(path, content, { author: this.name || 'research-agent' });
+    await fs.writeFile(path, content, { author: this.state?.name || 'research-agent' });
     return Response.json({ ok: true });
   }
 
@@ -195,7 +196,7 @@ export class ResearchAgent extends DurableObject<Env> {
       await ia.fetch(new Request('https://interaction-agent/relay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: this.name, message }),
+        body: JSON.stringify({ agent_id: this.state?.name, message }),
       }));
     } catch {
       // ignore relay errors
