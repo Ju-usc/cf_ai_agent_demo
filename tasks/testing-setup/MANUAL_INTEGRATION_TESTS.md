@@ -44,7 +44,7 @@ curl http://localhost:8787/health
 Verify CORS headers are correct:
 
 ```bash
-curl -X OPTIONS http://localhost:8787/agents/interaction/default/message \
+curl -X OPTIONS http://localhost:8787/agents/interaction-agent/default/message \
   -H "Origin: https://example.com"
 ```
 
@@ -64,7 +64,7 @@ curl -X OPTIONS http://localhost:8787/agents/interaction/default/message \
 Send a message to the InteractionAgent, which creates a ResearchAgent:
 
 ```bash
-curl -X POST http://localhost:8787/agents/interaction/default/message \
+curl -X POST http://localhost:8787/agents/interaction-agent/default/message \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Research Duchenne muscular dystrophy treatments"
@@ -93,7 +93,7 @@ curl -X POST http://localhost:8787/agents/interaction/default/message \
 Send another message to the same agent:
 
 ```bash
-curl -X POST http://localhost:8787/agents/interaction/default/message \
+curl -X POST http://localhost:8787/agents/interaction-agent/default/message \
   -H "Content-Type: application/json" \
   -d '{
     "message": "What other therapies should I consider?"
@@ -116,7 +116,7 @@ curl -X POST http://localhost:8787/agents/interaction/default/message \
 Create a second research topic:
 
 ```bash
-curl -X POST http://localhost:8787/agents/interaction/default/message \
+curl -X POST http://localhost:8787/agents/interaction-agent/default/message \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Also research CAR-T therapy for lymphoma"
@@ -172,7 +172,7 @@ After running Scenarios 1-6, verify:
 ### Check logs in npm run dev terminal
 
 ```
-[wrangler] POST /agents/interaction/default/message
+[wrangler] POST /agents/interaction-agent/default/message
 [wrangler] ✅ InteractionAgent.initialize called
 [wrangler] ✅ create_agent tool executed
 [wrangler] ✅ ResearchAgent.initialize called

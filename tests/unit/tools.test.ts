@@ -76,11 +76,6 @@ describe('Agent Management Tools', () => {
       // Setup: empty registry
       mockStorage.get.mockResolvedValue(null);
       
-      // Mock successful init
-      mockStub.fetch.mockResolvedValue(
-        new Response(JSON.stringify({ success: true }), { status: 200 })
-      );
-      
       const result = await create_agent.execute({
         name: 'dmd_research',
         description: 'Duchenne MD research',
@@ -91,12 +86,11 @@ describe('Agent Management Tools', () => {
       expect(mockEnv.RESEARCH_AGENT!.idFromName).toHaveBeenCalledWith('dmd_research');
       expect(mockEnv.RESEARCH_AGENT!.get).toHaveBeenCalledWith('test-do-id');
       
-      // Verify initialization request
-      expect(mockStub.fetch).toHaveBeenCalledWith(
-        expect.objectContaining({
-          method: 'POST',
-          url: 'https://research-agent/init',
-        })
+      // Verify initialization call via JSRPC
+      expect(mockStub.initialize).toHaveBeenCalledWith(
+        'dmd_research',
+        'Duchenne MD research',
+        'Find latest treatments'
       );
       
       // Verify registry saved
@@ -116,7 +110,6 @@ describe('Agent Management Tools', () => {
 
     it('sanitizes agent name with special characters', async () => {
       mockStorage.get.mockResolvedValue(null);
-      mockStub.fetch.mockResolvedValue(new Response('{}', { status: 200 }));
       
       const result = await create_agent.execute({
         name: 'DMD Research! v2',
@@ -131,7 +124,6 @@ describe('Agent Management Tools', () => {
 
     it('sanitizes multiple spaces to single underscore', async () => {
       mockStorage.get.mockResolvedValue(null);
-      mockStub.fetch.mockResolvedValue(new Response('{}', { status: 200 }));
       
       await create_agent.execute({
         name: '  Multiple   Spaces  ',
@@ -144,7 +136,6 @@ describe('Agent Management Tools', () => {
 
     it('removes consecutive underscores', async () => {
       mockStorage.get.mockResolvedValue(null);
-      mockStub.fetch.mockResolvedValue(new Response('{}', { status: 200 }));
       
       await create_agent.execute({
         name: '___underscores___',
@@ -157,7 +148,6 @@ describe('Agent Management Tools', () => {
 
     it('handles whitespace-only name with fallback', async () => {
       mockStorage.get.mockResolvedValue(null);
-      mockStub.fetch.mockResolvedValue(new Response('{}', { status: 200 }));
       
       await create_agent.execute({
         name: '   ',
@@ -198,9 +188,7 @@ describe('Agent Management Tools', () => {
       mockStorage.get.mockResolvedValue(null);
       
       // Mock failed init
-      mockStub.fetch.mockResolvedValue(
-        new Response('Initialization error', { status: 500 })
-      );
+      mockStub.initialize.mockRejectedValue(new Error('Initialization error'));
       
       await expect(
         create_agent.execute({

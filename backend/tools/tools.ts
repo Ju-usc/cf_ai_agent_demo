@@ -67,16 +67,10 @@ export const create_agent = tool({
     const doId = env.RESEARCH_AGENT.idFromName(idName);
     const stub = env.RESEARCH_AGENT.get(doId);
 
-    const initRes = await stub.fetch(
-      new Request('https://research-agent/init', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: idName, description, message }),
-      })
-    );
-
-    if (!initRes.ok) {
-      const errText = await initRes.text();
+    try {
+      await stub.initialize(idName, description, message);
+    } catch (error: any) {
+      const errText = error?.message ?? String(error);
       throw new Error(`Failed to initialize agent: ${errText}`);
     }
 
