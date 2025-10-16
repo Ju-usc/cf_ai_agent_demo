@@ -11,8 +11,7 @@ The previous approach used factory functions that hid what tools were available:
 
 ```typescript
 // ❌ Hidden - can't see what tools are configured
-const toolDefs = getInteractionTools(this.env, this.ctx.storage);
-const tools = convertToAiSdkTools(toolDefs);
+const tools = getInteractionTools(this.env, this.ctx.storage);
 ```
 
 **Issues:**
@@ -74,11 +73,10 @@ Reviewers can see what changed without checking multiple files.
 
 **Before (factory pattern):**
 ```typescript
-import { getInteractionTools, convertToAiSdkTools } from '../tools/schemas';
+import { getInteractionTools } from '../tools/schemas';
 
 // ... inside handleChat
-const toolDefs = getInteractionTools(this.env, this.ctx.storage);
-const tools = convertToAiSdkTools(toolDefs);
+const tools = getInteractionTools(this.env, this.ctx.storage);
 // What tools does this agent have? 🤷 Need to check another file
 ```
 
@@ -153,11 +151,9 @@ const tools = {
 2. ✅ `backend/agents/ResearchAgent.ts` - Explicit tool definitions
 
 ### Files No Longer Needed (Can Remove)
-- ❌ `backend/tools/schemas.ts` - `getInteractionTools()` function
-- ❌ `backend/tools/schemas.ts` - `getResearchTools()` function
-- ❌ `backend/tools/schemas.ts` - `convertToAiSdkTools()` helper
+- ❌ `backend/tools/schemas.ts` - factory wrappers for tool creation
 
-These can be removed in a cleanup pass since agents now define tools inline.
+These can be removed in a cleanup pass since agents now import explicit tool definitions.
 
 ---
 
@@ -176,10 +172,9 @@ This aligns with:
 ### Before: Factory Pattern
 ```typescript
 // InteractionAgent.ts
-import { getInteractionTools, convertToAiSdkTools } from '../tools/schemas';
+import { getInteractionTools } from '../tools/schemas';
 
-const toolDefs = getInteractionTools(this.env, this.ctx.storage);
-const tools = convertToAiSdkTools(toolDefs);
+const tools = getInteractionTools(this.env, this.ctx.storage);
 // 🤷 What tools? Check schemas.ts...
 
 // schemas.ts (separate file)

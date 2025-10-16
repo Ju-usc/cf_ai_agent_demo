@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { create_agent, list_agents, message_agent, send_message } from '../../backend/tools/tools';
+import { create_agent, list_agents, message_to_research_agent, message_to_interaction_agent } from '../../backend/tools/tools';
 import type { InteractionAgent } from '../../backend/agents/InteractionAgent';
 import type { ResearchAgent } from '../../backend/agents/ResearchAgent';
 import type { Env, AgentRegistryEntry } from '../../backend/types';
@@ -264,7 +264,7 @@ describe('Agent Management Tools', () => {
     });
   });
 
-  describe('message_agent', () => {
+  describe('message_to_research_agent', () => {
     it('sends message to existing agent', async () => {
       const registry: Record<string, AgentRegistryEntry> = {
         dmd_research: {
@@ -279,7 +279,7 @@ describe('Agent Management Tools', () => {
       mockStorage.get.mockResolvedValue(registry);
       mockStub.sendMessage.mockResolvedValue('Research findings...');
       
-      const result = await message_agent.execute({
+      const result = await message_to_research_agent.execute({
         agent_id: 'dmd_research',
         message: "What's the status?",
       });
@@ -312,7 +312,7 @@ describe('Agent Management Tools', () => {
         },
       });
       
-      await message_agent.execute({
+      await message_to_research_agent.execute({
         agent_id: 'DMD Research v2',
         message: 'Test',
       });
@@ -335,7 +335,7 @@ describe('Agent Management Tools', () => {
       mockStub.sendMessage.mockRejectedValue(new Error('Network error'));
       
       await expect(
-        message_agent.execute({
+        message_to_research_agent.execute({
           agent_id: 'dmd_research',
           message: 'Test',
         })
@@ -380,9 +380,9 @@ describe('Research Agent Communication Tools', () => {
     });
   });
 
-  describe('send_message', () => {
+  describe('message_to_interaction_agent', () => {
     it('relays message successfully', async () => {
-      const result = await send_message.execute({
+      const result = await message_to_interaction_agent.execute({
         message: 'Analysis complete. Found 5 papers.',
       });
       
@@ -409,7 +409,7 @@ describe('Research Agent Communication Tools', () => {
       };
       
       // Should NOT throw - best effort means silent failure
-      const result = await send_message.execute({
+      const result = await message_to_interaction_agent.execute({
         message: 'Update',
       });
       
@@ -418,7 +418,7 @@ describe('Research Agent Communication Tools', () => {
     });
 
     it('handles empty message', async () => {
-      const result = await send_message.execute({
+      const result = await message_to_interaction_agent.execute({
         message: '',
       });
       

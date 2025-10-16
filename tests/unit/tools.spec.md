@@ -12,10 +12,10 @@ Tests for agent tool wrappers in `backend/tools/tools.ts` that have **complex lo
 ### Agent Management Tools (InteractionAgent Context)
 1. **create_agent** - Registry operations, name sanitization, agent initialization
 2. **list_agents** - Registry reads, formatting
-3. **message_agent** - Inter-agent communication, error handling
+3. **message_to_research_agent** - Inter-agent communication, error handling
 
 ### Communication Tools (ResearchAgent Context)
-4. **send_message** - Best-effort relay pattern
+4. **message_to_interaction_agent** - Best-effort relay pattern
 
 ---
 
@@ -102,7 +102,7 @@ Verify registry reads and formatting of agent list.
 - **Verification**: No errors thrown 
 ---
 
-## message_agent
+## message_to_research_agent
 
 ### Purpose
 Verify inter-agent communication and error handling.
@@ -143,7 +143,7 @@ Verify inter-agent communication and error handling.
 
 ---
 
-## send_message
+## message_to_interaction_agent
 
 ### Purpose
 Verify best-effort relay pattern from ResearchAgent back to InteractionAgent.
@@ -255,8 +255,8 @@ describe('Tool Schemas', () => {
 
 - [ ] create_agent: Name sanitization, registry operations, initialization tested
 - [ ] list_agents: Registry reads, formatting, edge cases tested  
-- [ ] message_agent: Inter-agent communication, error handling tested
-- [ ] send_message: Best-effort relay pattern tested
+- [ ] message_to_research_agent: Inter-agent communication, error handling tested
+- [ ] message_to_interaction_agent: Best-effort relay pattern tested
 - [ ] getCurrentAgent() context injection works for both agent types
 - [ ] Durable Object stub communication mocked properly
 - [ ] Error handling verified (agent not found, network failures, etc.)

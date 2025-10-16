@@ -58,25 +58,24 @@ const tools = Object.fromEntries(
 
 **After:**
 ```typescript
-// Added helper in schemas.ts
-export function convertToAiSdkTools(toolDefs: Record<string, AiSdkToolDef>): Record<string, any> {
-  return Object.fromEntries(
-    Object.entries(toolDefs).map(([name, def]) => [
-      name,
-      aiTool({ 
-        description: def.description, 
-        parameters: def.parameters, 
-        execute: def.execute 
-      }),
-    ]),
-  );
-}
-
-// Both agents now use:
-const tools = convertToAiSdkTools(toolDefs);
+// Tools now defined explicitly where they are used
+const tools = {
+  create_agent: tool({
+    description: 'Create a new research agent for a specific domain',
+    inputSchema: z.object({
+      name: z.string(),
+      description: z.string(),
+      message: z.string(),
+    }),
+    execute: async ({ name, description, message }) => {
+      return agentMgr.create_agent(name, description, message);
+    },
+  }),
+  // ...additional tools inline
+};
 ```
 
-**Impact:** DRY principle, single source of truth, easier to update
+**Impact:** Inline definitions make each agent’s capabilities visible at a glance, reduce helper indirection, and keep implementations co-located with their execution context.
 
 ---
 
@@ -98,10 +97,9 @@ import { generateText, tool as aiTool } from 'ai'; // aiTool not needed
 import { DurableObject } from 'cloudflare:workers';
 // @ts-expect-error External provider types provided at runtime
 import { createWorkersAI } from 'workers-ai-provider';
-// @ts-expect-error Using generic AI SDK types
-import { generateText } from 'ai';
+import { streamText } from 'ai';
 import type { Env, Message } from '../types';
-import { getInteractionTools, convertToAiSdkTools } from '../tools/schemas';
+import { agentManagementTools } from '../tools/tools';
 ```
 
 **Impact:** 
@@ -232,7 +230,7 @@ const systemPrompt =
 
 ### After Refactor
 - ✅ Type safety: Proper type annotations
-- ✅ Code duplication: Extracted to helper
+- ✅ Code duplication: Tools co-located and defined once per agent
 - ✅ Unused imports: Removed
 - ✅ Error handling: Full try-catch with logging
 - ✅ Path consistency: Standardized per docs
@@ -269,12 +267,14 @@ const systemPrompt =
 
 ### Example Test Structure
 ```typescript
-// Unit test for helper
-describe('convertToAiSdkTools', () => {
-  it('should convert tool definitions to AI SDK format', () => {
-    const toolDefs = { ... };
-    const result = convertToAiSdkTools(toolDefs);
-    expect(result).toBeDefined();
+// Unit test for tool catalog
+describe('agentManagementTools', () => {
+  it('exposes expected tool names', () => {
+    expect(Object.keys(agentManagementTools)).toEqual([
+      'create_agent',
+      'list_agents',
+      'message_to_research_agent',
+    ]);
   });
 });
 
@@ -291,17 +291,16 @@ describe('InteractionAgent handleChat', () => {
 
 ## Files Modified
 
-1. ✅ `backend/types.ts` - Added AiSdkToolDef interface
-2. ✅ `backend/tools/schemas.ts` - Added helper, docs, better types
-3. ✅ `backend/agents/InteractionAgent.ts` - Cleaned imports, error handling, helper usage
-4. ✅ `backend/agents/ResearchAgent.ts` - Cleaned imports, error handling, path fix, helper usage
+1. ✅ `backend/tools/tools.ts` - Centralized tool definitions with inline `tool()` calls
+2. ✅ `backend/agents/InteractionAgent.ts` - Cleaned imports, error handling, helper usage
+3. ✅ `backend/agents/ResearchAgent.ts` - Cleaned imports, error handling, path fix, helper usage
 
 ---
 
 ## Next Steps
 
 ### Immediate
-- [ ] Add unit tests for `convertToAiSdkTools`
+- [ ] Add unit tests covering inline tool definitions
 - [ ] Add integration tests with mocked AI responses
 - [ ] Test error handling paths
 

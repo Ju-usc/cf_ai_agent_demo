@@ -11,6 +11,7 @@ import { getCurrentAgent } from 'agents';
 import type { InteractionAgent } from '../agents/InteractionAgent';
 import type { ResearchAgent } from '../agents/ResearchAgent';
 import type { ResearchAgentInfo, AgentRegistryEntry } from '../types';
+import type { ExecutionsMap } from '../utils/toolProcessing';
 
 // ============================================================================
 // Agent Management Tools (for InteractionAgent)
@@ -110,7 +111,7 @@ export const list_agents = tool({
   },
 });
 
-export const message_agent = tool({
+export const message_to_research_agent = tool({
   description: 'Send a message to a specific research agent',
   inputSchema: z.object({
     agent_id: z.string().describe('The ID of the agent'),
@@ -194,7 +195,7 @@ export const list_files = tool({
   },
 });
 
-export const send_message = tool({
+export const message_to_interaction_agent = tool({
   description: 'Send a status update back to the InteractionAgent',
   inputSchema: z.object({
     message: z.string().describe('Status or summary to report back'),
@@ -215,12 +216,14 @@ export const send_message = tool({
 export const agentManagementTools = {
   create_agent,
   list_agents,
-  message_agent,
+  message_to_research_agent,
 } satisfies ToolSet;
 
 export const researchTools = {
   write_file,
   read_file,
   list_files,
-  send_message,
+  message_to_interaction_agent,
 } satisfies ToolSet;
+
+export const toolExecutions: ExecutionsMap = {};

@@ -1,8 +1,16 @@
 import { AIChatAgent } from 'agents/ai-chat-agent';
-import { streamText, convertToModelMessages, type StreamTextOnFinishCallback, type ToolSet } from 'ai';
+import {
+  streamText,
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  type StreamTextOnFinishCallback,
+  type ToolSet,
+} from 'ai';
 import type { Env } from '../types';
-import { agentManagementTools } from '../tools/tools';
+import { agentManagementTools, toolExecutions } from '../tools/tools';
 import { createChatModel } from './modelFactory';
+import { cleanupMessages, processToolCalls } from '../utils/toolProcessing';
 
 export class InteractionAgent extends AIChatAgent<Env> {
   // Public helper methods for tools to access protected properties
@@ -24,15 +32,29 @@ export class InteractionAgent extends AIChatAgent<Env> {
       'You are the Interaction Agent for a medical innovation research system. ' +
       'You can manage research agents via tools. Prefer creating a specialized ResearchAgent when asked to research.';
 
-    const result = await streamText({
-      model,
-      system: systemPrompt,
-      messages: convertToModelMessages(this.messages),
-      tools: agentManagementTools,
-      onFinish: onFinish as any,
+    const stream = createUIMessageStream({
+      execute: async ({ writer }) => {
+        const cleanedMessages = cleanupMessages(this.messages);
+        const processedMessages = await processToolCalls({
+          messages: cleanedMessages,
+          dataStream: writer,
+          tools: agentManagementTools,
+          executions: toolExecutions,
+        });
+
+        const result = streamText({
+          model,
+          system: systemPrompt,
+          messages: convertToModelMessages(processedMessages),
+          tools: agentManagementTools,
+          onFinish: onFinish as unknown as StreamTextOnFinishCallback<typeof agentManagementTools>,
+        });
+
+        writer.merge(result.toUIMessageStream());
+      },
     });
 
-    return result.toTextStreamResponse();
+    return createUIMessageStreamResponse({ stream });
   }
 
   // All ResearchAgent communication now via JSRPC
@@ -40,15 +62,11 @@ export class InteractionAgent extends AIChatAgent<Env> {
   
   // JSRPC method for relay
   async relay(agentId: string, message: string): Promise<void> {
-    // Add relay message to conversation
-    // This is used when ResearchAgent sends async updates (e.g., from triggers or progress updates)
-    this.messages.push({
+    const relayMessage = {
       role: 'user',
       content: `Agent ${agentId} reports: ${message}`,
-    } as any);
-    
-    // AIChatAgent base class handles persistence automatically
-    // But we'll keep explicit save for now to ensure relay messages persist
-    await this.saveMessages(this.messages);
+    } as any;
+
+    await this.persistMessages([...this.messages, relayMessage]);
   }
 }
