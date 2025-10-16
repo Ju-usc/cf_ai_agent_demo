@@ -768,60 +768,66 @@ describe('Tool Processing Utils', () => {
 
 ## Migration Checklist
 
-### Phase 1: Context Injection
-- [ ] Create `backend/tools/agent_management.ts` with getCurrentAgent pattern
-- [ ] Create `backend/tools/research_tools.ts` with getCurrentAgent pattern
-- [ ] Update `backend/tools/tools.ts` to export new tool modules
-- [ ] Update `InteractionAgent.onChatMessage()` to use new tools
-- [ ] Update `ResearchAgent.handleMessage()` to use new tools
-- [ ] Delete old factory `createAgentManagementTools()`
-- [ ] Test: Agent creation still works
-- [ ] Test: Research agent tools still work
+### Phase 1: Context Injection ✅ COMPLETED
+- [x] ~~Create separate tool files~~ → Created unified `backend/tools/tools.ts` with ALL tools
+- [x] Added getCurrentAgent pattern to all tools
+- [x] Update `InteractionAgent.onChatMessage()` to use new tools
+- [x] Update `ResearchAgent.handleMessage()` to use new tools
+- [x] Delete old factory `createAgentManagementTools()`
+- [x] Added helper methods (getEnv, getStorage) for protected property access
+- [x] TypeScript compilation verified (0 errors)
+- [ ] ⚠️ **TODO**: Manual testing (requires CLOUDFLARE_API_TOKEN or local model setup)
 
-### Phase 2: Message Management
-- [ ] Simplify `InteractionAgent.handleRelay()` to remove manual persistence
-- [ ] Test: Messages still persist correctly
-- [ ] Test: Relay messages still appear in conversation
+### Phase 2: Message Management ✅ COMPLETED (Partial)
+- [x] Removed automatic `bestEffortRelay()` from ResearchAgent.handleMessage()
+- [x] Fixed duplicate message bug in sync flow
+- [x] Clarified sync (HTTP response) vs async (relay) patterns
+- [x] Added clarifying comments about when relay is used
+- [ ] ⚠️ **KEPT**: Manual persistence in handleRelay() for async updates (intentional)
 
-### Phase 3: Human-in-the-Loop
+### Phase 3: Human-in-the-Loop ⏸️ SKIPPED
 - [ ] Create `backend/utils/toolProcessing.ts`
 - [ ] Add `delete_agent` tool with confirmation requirement
 - [ ] Update `InteractionAgent.onChatMessage()` to use processToolCalls
-- [ ] Test: Tool confirmations work in UI
-- [ ] Test: Approved tools execute correctly
-- [ ] Test: Denied tools show error message
+- [ ] **Status**: Not needed yet, can add later when frontend UI is ready
 
-### Phase 4: Documentation
-- [ ] Update `REFACTOR_SUMMARY.md`
-- [ ] Update `docs/ARCHITECTURE.md`
-- [ ] Clean up `tasks/core-tools-implementation/` folder
-- [ ] Add context injection pattern to `AGENTS.md`
+### Phase 4: Documentation ✅ COMPLETED (Partial)
+- [x] Updated `REFACTOR_SUMMARY.md` with Phases 1 & 2
+- [x] Updated `AGENTS.md` (removed implementation details, kept high-level)
+- [x] Added `nodejs_compat` to wrangler.toml
+- [x] Created comprehensive research docs in `tasks/pr-review-agents-sdk-migration/`
+- [ ] ⚠️ **TODO**: Update `docs/ARCHITECTURE.md` with tool patterns
+- [ ] ⚠️ **TODO**: Clean up obsolete `tasks/core-tools-implementation/` folder
 
-### Phase 5: Tests
+### Phase 5: Tests ❌ NOT STARTED
 - [ ] Add tool execution tests
 - [ ] Add message processing tests
 - [ ] Add agent routing tests
 - [ ] Achieve >70% code coverage
+- [ ] **Status**: Should be done before production deployment
 
 ---
 
-## Expected Outcomes
+## Actual Outcomes (Phases 1, 2, 4 Completed)
 
 ### Code Metrics
-- **Lines removed**: ~150 lines of boilerplate
-- **Files deleted**: 1 (old factory)
-- **Files added**: 3 (new tool modules, utils)
-- **Net change**: ~50 lines fewer
+- **Lines removed**: ~70 lines of boilerplate (actual)
+- **Files deleted**: 1 (old factory pattern)
+- **Files added**: 1 unified tools.ts (simpler than planned)
+- **Net change**: ~45 lines fewer, cleaner structure
+- **TypeScript**: 0 compilation errors
 
-### Code Quality
+### Code Quality ✅ Achieved
 - ✅ Cleaner tool definitions (single place for schema + logic)
 - ✅ No manual dependency injection
-- ✅ Proper SDK message handling
-- ✅ Human-in-the-loop support for dangerous ops
-- ✅ Better test coverage
+- ✅ Fixed duplicate message bug
+- ✅ Proper sync/async pattern separation
+- ⏸️ Human-in-the-loop support - deferred to later
+- ❌ Test coverage - not added yet
 
-### Maintainability
-- ✅ Follows official Cloudflare patterns
+### Maintainability ✅ Achieved
+- ✅ Follows official Cloudflare patterns (getCurrentAgent)
+- ✅ All tools in one unified file (easier to find)
 - ✅ Easier for new developers to understand
 - ✅ Better aligned with SDK updates
 - ✅ More reusable tools across agents
@@ -859,17 +865,68 @@ describe('Tool Processing Utils', () => {
 
 ---
 
-## Questions to Resolve
+## Questions Resolved ✅ / Still Open ⚠️
 
-1. **Message Relay**: Should we keep custom relay endpoint or use SDK's agent-to-agent messaging?
-2. **UI Changes**: Do we have a frontend for tool confirmations, or should we build it?
-3. **MCP Tools**: Should we integrate Model Context Protocol tools like agents-starter does?
-4. **Model Caching**: Should we cache model instances instead of creating per-request?
+1. **Message Relay**: ✅ RESOLVED
+   - Keeping custom relay endpoint for async scenarios (triggers, progress updates)
+   - Removed automatic relay from sync flow
+   - HTTP response used for sync request/response
+
+2. **Tool File Organization**: ✅ RESOLVED
+   - Went with single unified `tools.ts` file (simpler than separate files)
+   - All tools in one place, agents import what they need
+
+3. **Protected Properties**: ✅ RESOLVED
+   - Added helper methods (getEnv, getStorage) instead of direct access
+   - Maintains proper encapsulation
+
+4. **UI Changes**: ⚠️ DEFERRED
+   - Human-in-the-loop not needed yet
+   - Can add later when frontend UI is ready
+
+5. **MCP Tools**: ⚠️ OPEN
+   - Should we integrate Model Context Protocol tools like agents-starter does?
+
+6. **Model Caching**: ⚠️ OPEN
+   - Should we cache model instances instead of creating per-request?
+
+7. **Testing Strategy**: ⚠️ OPEN
+   - Needs CLOUDFLARE_API_TOKEN for dev server
+   - Or switch to OpenAI/Anthropic for local testing
 
 ---
 
-## Recommendation
+## Status Update
 
-**Start with Phase 1 (Context Injection)** - it's the highest impact, lowest risk change that will immediately make the code cleaner and more maintainable. Then proceed through phases sequentially.
+### ✅ Completed (Commit: e8c0b76)
+- **Phase 1**: Context Injection Pattern
+- **Phase 2**: Fixed Communication Bugs
+- **Phase 4**: Documentation Updates (partial)
 
-The improvements are well worth it: less code, better patterns, and closer alignment with Cloudflare's vision for the Agents SDK.
+### ⏸️ Deferred
+- **Phase 3**: Human-in-the-Loop (not needed yet, requires frontend)
+
+### ❌ Remaining Work
+- **Phase 4**: Complete documentation updates
+  - Update `docs/ARCHITECTURE.md` with tool patterns
+  - Clean up obsolete task folders
+- **Phase 5**: Add Tests (critical for production)
+  - Tool execution tests
+  - Message processing tests
+  - Agent routing tests
+
+### 🎯 Next Actions
+
+**Before Production:**
+1. **Add tests** (Phase 5) - Most critical
+2. **Set up testing environment** (CLOUDFLARE_API_TOKEN or local models)
+3. **Manual testing** - Verify agents work end-to-end
+4. **Complete docs** - Update ARCHITECTURE.md
+
+**Future Enhancements:**
+1. Human-in-the-loop pattern (when frontend ready)
+2. Trigger/alarm system for scheduled research
+3. MCP tools integration (evaluate need)
+4. Model caching optimization
+
+**Overall Result:** Successfully improved codebase alignment with Cloudflare patterns. Code is cleaner, more maintainable, and ready for testing phase.
