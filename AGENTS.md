@@ -167,12 +167,7 @@ See `tests/TESTS.md` for detailed testing patterns and examples.
 ---
 
 ## Agentic Coding Workflow Guidlines 
-
-### Durable Objects
-* Each agent = one Durable Object class instance
-* Persistent memory via `this.ctx.storage`
-* Single-threaded (no race conditions)
-* Always extend `DurableObject<Env>` and call `super(ctx, env)`
+Make sure in each tasks/ folder, we have research.md, plan.md, review.md files. These files should be updated as we progress through the task.
 
 - Operating on a task basis. Store all intermediate context in markdown files in tasks/<task-id>/ folders.
 - Use semantic task id slugs
