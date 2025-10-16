@@ -55,6 +55,13 @@ export const create_agent = tool({
     const now = Date.now();
     const idName = sanitizeName(name);
 
+    // Check for duplicate agent name
+    const storage = agent.getStorage();
+    const registry = await loadRegistry(storage);
+    if (registry[idName]) {
+      throw new Error(`Agent already exists: ${idName}`);
+    }
+
     const env = agent.getEnv();
     const doId = env.RESEARCH_AGENT.idFromName(idName);
     const stub = env.RESEARCH_AGENT.get(doId);
@@ -72,13 +79,12 @@ export const create_agent = tool({
       throw new Error(`Failed to initialize agent: ${errText}`);
     }
 
-    const storage = agent.getStorage();
-    const registry = await loadRegistry(storage);
+    // Add to registry
     registry[idName] = {
       id: idName,
       name: idName,
       description,
-      createdAt: registry[idName]?.createdAt ?? now,
+      createdAt: now,
       lastActive: now,
     };
     await saveRegistry(storage, registry);
@@ -119,20 +125,8 @@ export const message_agent = tool({
     const doId = env.RESEARCH_AGENT.idFromName(idName);
     const stub = env.RESEARCH_AGENT.get(doId);
 
-    const res = await stub.fetch(
-      new Request('https://research-agent/message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
-      })
-    );
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Failed to message agent: ${errText}`);
-    }
-
-    const data = (await res.json()) as { message: string };
+    // JSRPC: Direct method call instead of HTTP
+    const reply = await stub.sendMessage(message);
 
     const storage = agent.getStorage();
     const registry = await loadRegistry(storage);
@@ -141,7 +135,7 @@ export const message_agent = tool({
       await saveRegistry(storage, registry);
     }
 
-    return { response: data.message };
+    return { response: reply };
   },
 });
 
