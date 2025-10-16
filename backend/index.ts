@@ -26,6 +26,12 @@ export default {
       if (routed) return routed;
     }
 
+    // Backward compatibility: /api/chat -> InteractionAgent
+    if (url.pathname === '/api/chat' && request.method === 'POST') {
+      const id = env.INTERACTION_AGENT.idFromName('main');
+      const stub = env.INTERACTION_AGENT.get(id);
+      return stub.fetch(request);
+    }
 
     // Health check
     if (url.pathname === '/health') {
