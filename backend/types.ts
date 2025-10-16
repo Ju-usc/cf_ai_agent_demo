@@ -1,12 +1,23 @@
+import type { AgentNamespace } from 'agents';
+import type { InteractionAgent } from './agents/InteractionAgent';
+import type { ResearchAgent } from './agents/ResearchAgent';
+
 // Environment bindings
 export interface Env {
   AI: Ai;
   DB: D1Database;
   R2: R2Bucket;
-  INTERACTION_AGENT: DurableObjectNamespace;
-  RESEARCH_AGENT: DurableObjectNamespace;
+  INTERACTION_AGENT: AgentNamespace<InteractionAgent>;
+  RESEARCH_AGENT: AgentNamespace<ResearchAgent>;
   PERPLEXITY_API_KEY?: string;
   EMAIL_API_KEY?: string;
+  // AI provider config
+  AI_PROVIDER?: 'workers-ai' | 'openai' | 'anthropic';
+  WORKERS_AI_MODEL?: string;
+  OPENAI_API_KEY?: string;
+  OPENAI_MODEL?: string;
+  ANTHROPIC_API_KEY?: string;
+  ANTHROPIC_MODEL?: string;
 }
 
 // Agent types
@@ -59,5 +70,15 @@ export interface Trigger {
   instruction: string;
   status: 'pending' | 'completed' | 'cancelled';
   fire_at: number;
+}
+
+// Ambient module declarations for external SDKs to satisfy TypeScript
+// without requiring full type packages during initial refactor.
+
+// AI SDK Tool Definition
+export interface AiSdkToolDef {
+  description: string;
+  parameters: any; // Zod schema object
+  execute: (args: any) => Promise<any>;
 }
 

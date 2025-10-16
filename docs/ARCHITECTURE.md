@@ -46,47 +46,78 @@ Ambient AI agent that continuously monitors medical research, maintains dynamic 
 
 ## Tool Interface
 
-### Interaction Agent Tools
+### Tool Implementation Pattern
+
+Tools use Cloudflare Agents SDK with context injection:
 
 ```typescript
-// Agent Management
-list_research_agents() → [{id, name, description}]
-message_agent(agent_id, message)
-spawn_research_agent(name, description, message) → {agent_id}
+// All tools defined in backend/tools/tools.ts
+import { tool } from 'ai';
+import { getCurrentAgent } from 'agents';
 
-// User Communication
-respond(message)
-wait()  // Suppress low-signal messages
-
-// File System (sandboxed to /memory/interaction/)
-write_file(file_path, content) → {file_path}
-read_file(file_path) → {content}
-list_files() → [{file_path, size, modified_at}]
+export const example_tool = tool({
+  description: 'Tool description for LLM',
+  inputSchema: z.object({
+    param: z.string().describe('Parameter description'),
+  }),
+  execute: async ({ param }) => {
+    // Access agent context via AsyncLocalStorage
+    const { agent } = getCurrentAgent<AgentType>();
+    
+    // Agent provides env and storage access
+    const env = agent.getEnv();
+    const storage = agent.getStorage();
+    
+    // Implementation
+    return { result: 'value' };
+  }
+});
 ```
+
+**Key Principles:**
+- Tools are self-contained (schema + implementation together)
+- No factory functions or manual dependency injection
+- Agent context available via `getCurrentAgent()` from AsyncLocalStorage
+- All tools in single `backend/tools/tools.ts` file
+
+### Interaction Agent Tools
+
+**Agent Management:**
+```typescript
+create_agent(name, description, message) → {agent_id}
+list_agents() → [{id, name, description}]
+message_agent(agent_id, message) → {response}
+```
+
+**Communication Pattern:**
+- Synchronous: User → IA calls `message_agent` → ResearchAgent processes → HTTP response
+- Response is immediate, returned as tool result to IA's LLM
 
 ### Research Agent Tools
 
+**File System:** (sandboxed to `/memory/research_agents/{agent_name}/`)
+```typescript
+write_file(path, content) → {ok: true}
+read_file(path) → {content}
+list_files(dir?) → {files: []}
+```
+
+**Communication:**
+```typescript
+send_message(message) → {ok: true}
+```
+- Async: ResearchAgent calls `send_message` → POSTs to IA's `/relay` endpoint
+- Used for: Progress updates, trigger-initiated reports, background notifications
+- Not used for: Synchronous request/response (use HTTP response instead)
+
+**Future Tools** (not yet implemented):
 ```typescript
 // Research
-web_search(query, domains?, max_results?) → [{title, url, snippet, source, date}]
-  // domains: ["medical_journals", "regulatory", "clinical_trials", "news"]
+web_search(query) → [{title, url, snippet}]
 email_send(to, subject, body) → {email_id}
-email_check(email_id) → {has_reply, reply_content}
 
-// Triggers
+// Triggers (Cloudflare Workflows)
 create_trigger(schedule, instruction) → {trigger_id}
-  // schedule: "2026-05-15", "+3 months", "weekly", "monthly"
-update_trigger(trigger_id, new_schedule?, new_instruction?)
-list_triggers() → [{trigger_id, schedule, instruction, status}]
-delete_trigger(trigger_id)
-
-// Communication
-send_message(message, priority?) // priority: "normal" | "high"
-
-// File System (sandboxed to /memory/research_agents/{agent_name}/)
-write_file(file_path, content) → {file_path}
-read_file(file_path) → {content}
-list_files() → [{file_path, size, modified_at}]
 ```
 
 **Note:** All file paths are relative to agent's workspace root. Agents cannot access other agents' files.
@@ -194,13 +225,69 @@ conversation {
 
 ---
 
-## Implementation Notes
+## Implementation Stack
 
-**Interface:** Web-based chat UI (user ↔ IA only)  
-**Integrations:** Perplexity API (web search), Email service, Database, Background scheduler  
-**Tech Stack:** TBD (React/Next.js frontend, Cloudflare hosting for internship)
+### Cloudflare Infrastructure
+
+**Agents:** Durable Objects (InteractionAgent, ResearchAgent)
+- Persistent state via `this.state` and Durable Object storage
+- Strongly consistent, single-threaded execution
+- HTTP-based communication between agents
+
+**Storage:**
+- R2 Bucket: File system (`/memory/` structure)
+- D1 Database: Agent registry, metadata (not yet implemented)
+- Durable Object Storage: Agent state, conversation history
+
+**AI:**
+- Workers AI (Llama 3.3 70B) - primary
+- OpenAI/Anthropic - configurable via `AI_PROVIDER` env var
+
+**Patterns:**
+- Cloudflare Agents SDK (`agents` package)
+- AI SDK (`ai` package) for LLM calls with tools
+- `getCurrentAgent()` for context injection
+- Unified tools in `backend/tools/tools.ts`
+
+### Communication Patterns
+
+**Synchronous (Request/Response):**
+```
+User → InteractionAgent → message_agent tool
+                        ↓
+                   ResearchAgent /message endpoint
+                        ↓
+                   HTTP response with result
+```
+
+**Asynchronous (Relay/Push):**
+```
+ResearchAgent (triggered/background)
+      ↓
+   send_message tool
+      ↓
+POST to InteractionAgent /relay endpoint
+      ↓
+Added to IA's message history
+```
+
+### Current Implementation Status
+
+✅ **Implemented:**
+- InteractionAgent with agent management tools
+- ResearchAgent with file system tools
+- Context injection pattern (getCurrentAgent)
+- Sync/async communication patterns
+- Model factory (Workers AI, OpenAI, Anthropic)
+
+⏸️ **Deferred:**
+- Web search integration (Perplexity API)
+- Email system
+- Trigger/alarm system (Cloudflare Workflows)
+- D1 database for metadata
+- Frontend UI
 
 ---
 
-**Version:** 1.0 | **Updated:** Oct 14, 2025
+**Version:** 1.1 | **Updated:** Oct 16, 2025 | **Commit:** e8c0b76
 

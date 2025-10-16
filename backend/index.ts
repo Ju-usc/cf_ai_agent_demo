@@ -1,6 +1,7 @@
 import type { Env } from './types';
 import { InteractionAgent } from './agents/InteractionAgent';
 import { ResearchAgent } from './agents/ResearchAgent';
+import { routeAgentRequest } from 'agents';
 
 export { InteractionAgent, ResearchAgent };
 
@@ -19,16 +20,17 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Route to Interaction Agent (single instance for now)
-    if (url.pathname.startsWith('/api/chat')) {
-      const id = env.INTERACTION_AGENT.idFromName('default');
+    // Primary: Use Agents SDK router for /agents/**
+    if (url.pathname.startsWith('/agents')) {
+      const routed = await routeAgentRequest(request, env, { cors: true });
+      if (routed) return routed;
+    }
+
+    // Backward compatibility: /api/chat -> InteractionAgent
+    if (url.pathname === '/api/chat' && request.method === 'POST') {
+      const id = env.INTERACTION_AGENT.idFromName('main');
       const stub = env.INTERACTION_AGENT.get(id);
-      const response = await stub.fetch(new Request(`${stub}${url.pathname.replace('/api', '')}`, request));
-      
-      return new Response(response.body, {
-        status: response.status,
-        headers: { ...Object.fromEntries(response.headers), ...corsHeaders },
-      });
+      return stub.fetch(request);
     }
 
     // Health check

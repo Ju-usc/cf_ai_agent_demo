@@ -790,3 +790,46 @@ const [searchResults, fileContent, emailStatus] = await Promise.all([
 - [Perplexity API Docs](https://docs.perplexity.ai/)
 - NIA Deep Research Agent findings (October 2025)
 
+## Cloudflare Agents package patterns (official)
+
+### Overview
+- Cloudflare provides a higher-level Agents SDK and starter template that streamline chat agents, tools, scheduling, and testing. See: [agents-starter](https://github.com/cloudflare/agents-starter), [Agents API reference](https://developers.cloudflare.com/agents/api-reference/agents-api/), [API Reference](https://developers.cloudflare.com/agents/api-reference/), [Calling Agents](https://developers.cloudflare.com/agents/api-reference/calling-agents/), [Using AI Models](https://developers.cloudflare.com/agents/api-reference/using-ai-models/), [Testing your Agents](https://developers.cloudflare.com/agents/getting-started/testing-your-agent/), [Patterns](https://developers.cloudflare.com/agents/patterns).
+
+### Tool definition pattern
+- Tools are defined via a builder with schema validation (commonly Zod), plus optional `execute` for auto-execution or omission for human-in-the-loop confirmation. This co-locates tool contracts with implementations and enables runtime validation. The starter demonstrates defining tools in `tools.ts` and wiring them directly to the agent runtime with confirmation flows. Reference: [agents-starter](https://github.com/cloudflare/agents-starter).
+- Benefit vs manual JSON schemas: fewer desyncs between schema and implementation; cleaner ergonomics; strong validation. Tradeoff: dependency on Agents builder + Zod.
+
+### Model calling pattern (AI SDK)
+- The starter uses the AI SDK to abstract providers; you can swap to Workers AI via the Workers AI provider while keeping the same agent code. This preserves agent logic while changing models. See: [Using AI Models](https://developers.cloudflare.com/agents/api-reference/using-ai-models/).
+
+### Agent routing and state
+- Agents run on Workers/Durable Objects; routing is often conventional (for example, `/agent/:agent/:name`) or via SDK helpers. Testing and local runs use the Workers Vitest pool (`@cloudflare/vitest-pool-workers`) with DO bindings. See: [Testing your Agents](https://developers.cloudflare.com/agents/getting-started/testing-your-agent/).
+
+### Patterns and HITL
+- Docs provide recommended patterns (task decomposition, tool-first planning, human-in-the-loop). The tool confirmation model maps to providing tools without `execute` until approved. See: [Patterns](https://developers.cloudflare.com/agents/patterns).
+
+### How this maps to our repo
+- Our current code uses manual JSON tool schemas and direct Workers AI calls. Migrating would:
+  - Replace `TOOL_SCHEMAS` with builder-based `tool(...)` definitions using Zod.
+  - Route model calls via the AI SDK (provider set to Workers AI) instead of calling `env.AI.run` directly.
+  - Adopt the official Agents testing setup for DO + Agent flows.
+  - Keep multi-agent design: still 1 DO per research agent via `idFromName`, with R2 sandboxed workspaces.
+
+### Design decisions/tradeoffs for adoption
+- Pros
+  - Cleaner tool ergonomics with validation next to code
+  - Provider-agnostic model calling via AI SDK (still supports Workers AI)
+  - First-class testing with Workers Vitest pool
+  - Aligns with Cloudflare’s examples and maintenance path
+- Cons
+  - Refactor cost replacing schemas + execution router
+  - New dependencies (agents SDK, Zod, AI SDK/provider)
+  - Reconcile custom DO endpoints with Agent routing utilities
+
+### Recommended migration approach
+1) Add Agents SDK and AI SDK Workers AI provider; keep our DO classes.
+2) Convert agent-management tools (`create_agent`, `list_agents`, `message_agent`) to builder-based tools.
+3) Replace manual tool call parsing with Agents runtime tool invocation.
+4) Adopt Vitest setup per docs and add tests for agent creation, messaging, and R2 VirtualFs ops.
+5) Preserve multi-agent architecture (one DO per agent, R2 workspace per agent) and validate end-to-end.
+
