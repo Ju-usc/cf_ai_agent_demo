@@ -72,6 +72,43 @@ Keep most tests fast and deterministic. Save integration for critical flows.
 
 ---
 
+## Spec-Driven Development
+
+This project uses **Specification-Driven Development** for tests and complex modules.
+
+### Philosophy
+* Write specifications (`.spec.md`) in plain English describing WHAT to test/build
+* AI agent acts as "compiler" generating/verifying code (`.test.ts` or `.ts`) from specs
+* Specs are source of truth - living documentation that evolves with code
+
+### When to Use Specs
+* ✅ **All tests** - Test specifications define behavior in plain English
+* ✅ **Complex modules** - Multi-step logic, state management, agent communication (after tests proven)
+* ❌ **Simple utilities** - One-liners, type definitions, config files
+
+### Workflow
+1. **Human writes/edits** `.spec.md` files (high-level intent, test cases, edge cases)
+2. **AI generates** corresponding implementation files
+3. **Human reviews** generated code
+4. **Human updates specs** when requirements change → AI updates code
+
+### File Structure
+```
+tests/
+├── TESTS.md              # Testing philosophy and patterns
+├── unit/
+│   ├── tools.spec.md     # Test specification (human-editable)
+│   └── tools.test.ts     # Test implementation (AI-generated)
+backend/
+├── tools/
+│   ├── tools.spec.md     # Module specification (for complex modules)
+│   └── tools.ts          # Implementation
+```
+
+See `tests/TESTS.md` for detailed testing patterns and examples.
+
+---
+
 ## Coding conventions (enforced by review)
 
 * Follow contracts in `docs/ARCHITECTURE.md` - do not add ad-hoc tools or fields
@@ -93,6 +130,7 @@ Keep most tests fast and deterministic. Save integration for critical flows.
 - Speak like a Senior Developer mentoring a junior engineer.
 - Provide enough context for the User to understand, but keep explanations short.
 - Always state your assumptions and conclusions clearly.
+- When user asks follow-up questions or requests explanations, answer directly in conversation. Do NOT create markdown files unless explicitly asked.
 
 ---
 
@@ -120,7 +158,7 @@ Keep most tests fast and deterministic. Save integration for critical flows.
 
 ---
 
-## Agentic Coding Workflow Guidlines
+## Agentic Coding Workflow Guidlines 
 
 ### Durable Objects
 * Each agent = one Durable Object class instance
@@ -146,6 +184,10 @@ Keep most tests fast and deterministic. Save integration for critical flows.
 - Write the comprehensive plan to plan.md. The plan should include all context required for an engineer to implement the feature.
 - Consider multiple design choices with their tradeoffs.
 - Wait for user to read and approve the plan
+- **When user adds comments to plan.md:**
+  - If comments raise design questions → ask user in CONVERSATION, then update plan.md with DECISIONS
+  - Do NOT add questions/options to plan.md - keep it clean with decisions only
+  - Update plan.md to reflect user's feedback and agreed decisions
 
 3. Implementation
 
