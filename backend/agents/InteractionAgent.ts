@@ -35,32 +35,20 @@ export class InteractionAgent extends AIChatAgent<Env> {
     return result.toTextStreamResponse();
   }
 
-  // Keep relay endpoint for ResearchAgent callbacks
-  async onRequest(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    
-    if (url.pathname === '/relay') {
-      return this.handleRelay(request);
-    }
-    
-    // Delegate all other requests to AIChatAgent's built-in routing
-    return super.onRequest(request);
-  }
-
-  private async handleRelay(request: Request): Promise<Response> {
-    const { agent_id, message } = await request.json<{ agent_id: string; message: string }>();
-    
+  // All ResearchAgent communication now via JSRPC
+  // No custom HTTP handlers needed - AIChatAgent handles all user-facing routes
+  
+  // JSRPC method for relay
+  async relay(agentId: string, message: string): Promise<void> {
     // Add relay message to conversation
     // This is used when ResearchAgent sends async updates (e.g., from triggers or progress updates)
     this.messages.push({
       role: 'user',
-      content: `Agent ${agent_id} reports: ${message}`,
+      content: `Agent ${agentId} reports: ${message}`,
     } as any);
     
     // AIChatAgent base class handles persistence automatically
     // But we'll keep explicit save for now to ensure relay messages persist
     await this.saveMessages(this.messages);
-    
-    return Response.json({ ok: true });
   }
 }

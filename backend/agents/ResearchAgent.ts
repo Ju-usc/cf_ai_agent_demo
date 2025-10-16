@@ -4,6 +4,7 @@ import type { Env, Message } from '../types';
 import { VirtualFs } from '../tools/file_system';
 import { researchTools } from '../tools/tools';
 import { createChatModel } from './modelFactory';
+import { AGENT_WORKSPACE_ROOT } from '../constants';
 
 type ResearchState = {
   messages: Message[];
@@ -15,30 +16,14 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
   private fs: VirtualFs | null = null;
   initialState: ResearchState = { messages: [], name: '', description: '' };
 
-  async onRequest(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    switch (url.pathname) {
-      case '/init':
-        return this.initialize(request);
-      case '/message':
-        return this.handleMessage(request);
-      case '/info':
-        return this.getInfo();
-      default:
-        return super.onRequest(request);
-    }
-  }
+  // All communication now via JSRPC - no HTTP endpoints needed
+  // Keep onRequest for potential future external API if needed
 
-  private async initialize(request: Request): Promise<Response> {
-    const { name, description, message } = await request.json<{
-      name: string;
-      description: string;
-      message: string;
-    }>();
-
+  // JSRPC method for initialization
+  async initialize(name: string, description: string, message: string): Promise<void> {
     this.setState({ ...this.state, name, description });
-    // Use standardized path as per architecture docs
-    this.fs = new VirtualFs(this.env.R2, `memory/research_agents/${name}/`);
+    // Use workspace root constant
+    this.fs = new VirtualFs(this.env.R2, `${AGENT_WORKSPACE_ROOT}research-agent/${name}/`);
 
     this.setState({
       ...this.state,
@@ -47,12 +32,10 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
         { role: 'user', content: message },
       ],
     });
-
-    return Response.json({ success: true });
   }
 
-  private async handleMessage(request: Request): Promise<Response> {
-    const { message } = await request.json<{ message: string }>();
+  // JSRPC method for sending messages
+  async sendMessage(message: string): Promise<string> {
     this.setState({ ...this.state, messages: [...(this.state?.messages ?? []), { role: 'user', content: message }] });
 
     try {
@@ -74,45 +57,40 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
       const assistantMessage = result.text || 'Okay.';
       this.setState({ ...this.state, messages: [...(this.state?.messages ?? []), { role: 'assistant', content: assistantMessage }] });
       
-      // Return response - no automatic relay
-      // ResearchAgent's LLM can use send_message tool if it wants to send progress updates
-      return Response.json({ message: assistantMessage });
+      return assistantMessage;
     } catch (error: any) {
-      console.error('ResearchAgent handleMessage error:', error);
+      console.error('ResearchAgent sendMessage error:', error);
       const errorMessage = 'Error processing research request.';
       this.setState({ ...this.state, messages: [...(this.state?.messages ?? []), { role: 'assistant', content: errorMessage }] });
-      return Response.json({ message: errorMessage, error: error.message }, { status: 500 });
+      throw error;
     }
   }
 
-  private async getInfo(): Promise<Response> {
-    return Response.json({
+  // JSRPC method for getting agent info
+  async getAgentInfo(): Promise<{ name: string; description: string; messageCount: number }> {
+    return {
       name: this.state?.name ?? '',
       description: this.state?.description ?? '',
       messageCount: (this.state?.messages ?? []).length,
-    });
+    };
   }
 
   // Make public so tools can access it
   ensureFs(): VirtualFs {
     if (!this.fs) {
-      // Use standardized path as per architecture docs
+      // Use workspace root constant
       const name = this.state?.name || 'unnamed';
-      this.fs = new VirtualFs(this.env.R2, `memory/research_agents/${name}/`);
+      this.fs = new VirtualFs(this.env.R2, `${AGENT_WORKSPACE_ROOT}research-agent/${name}/`);
     }
     return this.fs;
   }
 
-  // Make public so tools can access it
+  // Best-effort relay using JSRPC
   async bestEffortRelay(message: string): Promise<void> {
     try {
       const iaId = this.env.INTERACTION_AGENT.idFromName('default');
       const ia = this.env.INTERACTION_AGENT.get(iaId);
-      await ia.fetch(new Request('https://interaction-agent/relay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: this.state?.name, message }),
-      }));
+      await ia.relay(this.state?.name ?? 'unknown', message);
     } catch {
       // ignore relay errors
     }
