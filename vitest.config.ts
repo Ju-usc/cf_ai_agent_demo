@@ -6,9 +6,14 @@ export default defineWorkersConfig({
       workers: {
         singleWorker: true,
         isolatedStorage: true,
-        miniflare: {},
-        wrangler: { 
-          configPath: './wrangler.toml',
+        main: './backend/index.ts',
+        miniflare: {
+          compatibilityDate: '2024-10-14',
+          compatibilityFlags: ['nodejs_compat'],
+          durableObjects: {
+            INTERACTION_AGENT: 'InteractionAgent',
+            RESEARCH_AGENT: 'ResearchAgent',
+          },
         },
       },
     },

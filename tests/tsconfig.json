@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/vitest-pool-workers", "vitest"],
+    "moduleResolution": "bundler",
+    "module": "ESNext"
+  },
+  "include": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "../.wrangler/types/env.d.ts"
+  ]
+}
