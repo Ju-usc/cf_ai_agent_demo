@@ -139,12 +139,41 @@ Make sure to research each of those aspects -- do not assume anything.
 and try to use nia tools, refer official docs, for pattern, syntax, and best practice...etc to keep things clean. 
 
 ---------------------------------------------------------------
-
+for test documentation i was thinking of documenting each 
+   test files of what its testing in high level plain enlgish so
+    that this file can act like a higher lanague i can interface
+    with rather than touching test files. and u act like a 
+   compiler to inspect/generate/review this contract. -- try to 
+   resesearch about this approach in general i think there r 
+   people out there try to have this approach for general 
+   agentic coding framework. where user interact with md files 
+   and coding agent like u a compiler. And we try to target test
+    md files specifically.
 
 
 ---------------------------------------------------------------
+
+1. yes but let's differ this plan after finishing tests
+   yes tests only then adding specs to 1-2 ocmplex modules to 
+   see if the pattern scales well. 
+
+   also update our agents.md for this new workflow spec driven. 
+   keep things concsie.  overall i love the idea i agree with ur
+    recommnedations.
+
 ---------------------------------------------------------------
+i want md instead of txt when writing files as in the future 
+   we can render markdown format report to the user later
+
 ---------------------------------------------------------------
+i have wrote some comments for phase 1. let's also write spec
+    for this phase 1 rather than deferring to write spec at the 
+   end.  we could add details and discuss more about phase 2 
+   after phase 1 -- bc we can introduce patterns that agreed 
+   while doing phase 1 together
+
+---------------------------------------------------------------
+
 ---------------------------------------------------------------
 ---------------------------------------------------------------
 ---------------------------------------------------------------
