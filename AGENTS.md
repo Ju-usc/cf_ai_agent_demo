@@ -72,14 +72,15 @@ Keep most tests fast and deterministic. Save integration for critical flows.
 
 ---
 
-## Coding conventions (enforced by review) (fix this for our usecase)
+## Coding conventions (enforced by review)
 
 * Follow contracts in `docs/ARCHITECTURE.md` - do not add ad-hoc tools or fields
 * Single-shape I/O per function/module; validate at boundaries, **fail fast**
-* Keep modules small; avoid globals; pass dependencies explicitly (via Env)
+* Keep modules small; avoid globals
 * TypeScript types are contracts - trust them, avoid defensive checks
 * Reuse helpers/utilities; delete duplicate code
 * Cloudflare Workers are stateless - state lives in Durable Objects only
+* Follow Cloudflare Agents SDK patterns (see agents-starter for examples)
 
 ---
 

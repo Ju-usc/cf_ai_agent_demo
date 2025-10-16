@@ -2,7 +2,7 @@ import { Agent } from 'agents';
 import { generateText } from 'ai';
 import type { Env, Message } from '../types';
 import { VirtualFs } from '../tools/file_system';
-import { tools as allTools } from '../tools/tools';
+import { researchTools } from '../tools/tools';
 import { createChatModel } from './modelFactory';
 
 type ResearchState = {
@@ -57,38 +57,6 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
 
     try {
       const model = createChatModel(this.env);
-      
-      // Wire up execute functions for file system and communication tools
-      const tools = {
-        write_file: {
-          ...allTools.write_file,
-          execute: async ({ path, content }: { path: string; content: string }) => {
-            await this.ensureFs().writeFile(path, content, { author: this.state?.name || 'research-agent' });
-            return { ok: true };
-          },
-        },
-        read_file: {
-          ...allTools.read_file,
-          execute: async ({ path }: { path: string }) => {
-            const text = await this.ensureFs().readFile(path);
-            return { content: text };
-          },
-        },
-        list_files: {
-          ...allTools.list_files,
-          execute: async ({ dir }: { dir?: string }) => {
-            const files = await this.ensureFs().listFiles(dir);
-            return { files };
-          },
-        },
-        send_message: {
-          ...allTools.send_message,
-          execute: async ({ message }: { message: string }) => {
-            await this.bestEffortRelay(message);
-            return { ok: true };
-          },
-        },
-      };
 
       const systemPrompt = 
         'You are a specialized ResearchAgent. You can read/write files and report back to the InteractionAgent.';
@@ -100,15 +68,14 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
           { role: 'system', content: systemPrompt },
           ...(this.state?.messages ?? []),
         ] as any,
-        tools,
+        tools: researchTools,
       });
 
       const assistantMessage = result.text || 'Okay.';
       this.setState({ ...this.state, messages: [...(this.state?.messages ?? []), { role: 'assistant', content: assistantMessage }] });
       
-      // Relay message back to InteractionAgent
-      await this.bestEffortRelay(assistantMessage);
-      
+      // Return response - no automatic relay
+      // ResearchAgent's LLM can use send_message tool if it wants to send progress updates
       return Response.json({ message: assistantMessage });
     } catch (error: any) {
       console.error('ResearchAgent handleMessage error:', error);
@@ -126,7 +93,8 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
     });
   }
 
-  private ensureFs(): VirtualFs {
+  // Make public so tools can access it
+  ensureFs(): VirtualFs {
     if (!this.fs) {
       // Use standardized path as per architecture docs
       const name = this.state?.name || 'unnamed';
@@ -135,7 +103,8 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
     return this.fs;
   }
 
-  private async bestEffortRelay(message: string): Promise<void> {
+  // Make public so tools can access it
+  async bestEffortRelay(message: string): Promise<void> {
     try {
       const iaId = this.env.INTERACTION_AGENT.idFromName('default');
       const ia = this.env.INTERACTION_AGENT.get(iaId);

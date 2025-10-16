@@ -1,76 +1,111 @@
 # Code Refactor Summary ✅
 
-**Latest Update:** Made tools explicit for better readability (per user feedback)
+**Latest Update:** Adopted Cloudflare Agents SDK patterns (getCurrentAgent, context injection)
 
 ---
 
 ## What Was Fixed
 
-### 1. 🎯 Type Safety
-- ✅ Moved `AiSdkToolDef` to central types.ts
-- ✅ Changed `storage: any` → `storage: DurableObjectState['storage']`
-- ✅ Better type checking across the board
-
-### 2. 🔍 Explicit Tool Configuration (NEW!)
-**Before:** Tools hidden in factory functions  
-**After:** Tools defined explicitly in each agent for visibility
+### 1. 🎯 Context Injection Pattern (Phase 1)
+**Before:** Factory functions with manual dependency passing  
+**After:** `getCurrentAgent()` pattern with AsyncLocalStorage
 
 ```diff
-- // ❌ Hidden - need to check another file to see what tools exist
-- const toolDefs = getInteractionTools(this.env, this.ctx.storage);
-- const tools = convertToAiSdkTools(toolDefs);
+- // ❌ Factory pattern - manual dependency injection
+- const agentMgr = createAgentManagementTools(this.env, this.ctx.storage);
+- const tools = {
+-   create_agent: {
+-     ...allTools.create_agent,
+-     execute: async (args) => agentMgr.create_agent(...),
+-   },
+- };
 
-+ // ✅ Explicit - immediately clear what tools are available
-+ const tools = {
-+   create_agent: tool({ ... }),
-+   list_agents: tool({ ... }),
-+   message_agent: tool({ ... }),
-+ };
++ // ✅ getCurrentAgent pattern - automatic context injection
++ import { agentManagementTools } from '../tools/agent_management';
++ const result = await streamText({ tools: agentManagementTools });
+```
+
+**Tools now self-contained:**
+```typescript
+export const create_agent = tool({
+  description: 'Create a new research agent',
+  inputSchema: z.object({...}),
+  execute: async ({ name, description, message }) => {
+    // Access agent context via AsyncLocalStorage
+    const { agent } = getCurrentAgent<InteractionAgent>();
+    const env = agent.getEnv();
+    const storage = agent.getStorage();
+    // Implementation here
+  }
+});
 ```
 
 **Why Better:**
-- ⚡ Instant visibility - see all tools at a glance
-- 📖 Self-documenting - tools list is inline
-- 🎯 Easy to customize - just edit the object
-- 🔍 Better code review - clear what changed
+- ⚡ No factory functions - less boilerplate (~65 lines removed)
+- 📖 Self-contained tools - schema + implementation together
+- 🎯 No manual dependency passing - getCurrentAgent() handles it
+- 🔍 Follows official Cloudflare agents-starter pattern
 
-### 3. 🧹 Import Cleanup
-- ✅ Removed unused `TOOL_SCHEMAS` imports
-- ✅ Removed unused `aiTool` imports
-- ✅ Organized: external deps → types → internal modules
+### 2. 🐛 Fixed Communication Bug (Phase 2)
+**Before:** Duplicate messages from automatic relay  
+**After:** Clean sync/async pattern separation
 
-### 4. 🛡️ Error Handling Added
-**Before:** No error handling - could crash silently  
-**After:** Full try-catch with logging and user-friendly errors
+```diff
+  // ResearchAgent.handleMessage()
+  const assistantMessage = result.text;
+  
+- // ❌ Automatic relay (caused duplication!)
+- await this.bestEffortRelay(assistantMessage);
+- 
+  // ✅ Just return via HTTP for sync flow
+  return Response.json({ message: assistantMessage });
+```
+
+**Pattern Clarification:**
+- **Sync flow:** HTTP response = tool result (no relay)
+- **Async flow:** `send_message` tool → relay endpoint (for triggers/progress)
+
+**Why Better:**
+- ⚡ No duplicate messages in conversation
+- 📖 Clear sync vs async patterns
+- 🎯 Relay only used when actually needed
+
+### 3. 🛡️ Better Encapsulation
+**Added helper methods for protected properties:**
 
 ```typescript
-try {
-  // AI operations
-  return Response.json({ message: assistantMessage });
-} catch (error: any) {
-  console.error('Error:', error);
-  return Response.json({ 
-    message: 'Error processing request', 
-    error: error.message 
-  }, { status: 500 });
+class InteractionAgent extends AIChatAgent<Env> {
+  // Public helper methods for tools to access protected properties
+  getEnv(): Env {
+    return this.env;
+  }
+  
+  getStorage(): DurableObjectState['storage'] {
+    return this.ctx.storage;
+  }
 }
 ```
 
-### 5. 📁 Storage Path Consistency
-**Before:** `memory/agents/${name}/`  
-**After:** `memory/research_agents/${name}/`
+**Why needed:**
+- `env` and `ctx` are protected in base Agent class
+- Tools can't access them directly (TypeScript enforces)
+- Helper methods provide controlled access
+- Maintains proper OOP encapsulation
 
-Aligns with ARCHITECTURE.md and MVP_PLAN.md
+### 4. 📁 Organized Tool Modules
+**Created dedicated tool files:**
+- `backend/tools/agent_management.ts` - create_agent, list_agents, message_agent
+- `backend/tools/research_tools.ts` - write_file, read_file, list_files, send_message
 
-### 6. 📝 Documentation Added
-- JSDoc comments on all tool factory functions
-- Inline comments explaining key sections
-- Better code readability
+**Deleted obsolete files:**
+- `backend/tools/tools.ts` - Old unified file without execute functions
+- `backend/tools/agent_management_old.ts` - Old factory pattern
 
-### 7. 🎨 Code Formatting
-- Consistent line breaks in long strings
-- Better comment placement
-- Improved overall structure
+### 5. 🎨 Code Cleanup
+- ✅ Removed ~70 lines of boilerplate
+- ✅ Added `convertToModelMessages()` for proper type conversion
+- ✅ Made ResearchAgent methods public for tool access
+- ✅ Added clarifying comments about sync vs async patterns
 
 ---
 
@@ -95,18 +130,33 @@ Aligns with ARCHITECTURE.md and MVP_PLAN.md
 
 ## Files Modified
 
-1. **backend/types.ts** - Added AiSdkToolDef interface
-2. **backend/agents/InteractionAgent.ts** - Explicit tools + error handling + cleanup
-3. **backend/agents/ResearchAgent.ts** - Explicit tools + error handling + path fix
+### Changed
+1. **backend/agents/InteractionAgent.ts**
+   - Added `getEnv()` and `getStorage()` helper methods
+   - Simplified `onChatMessage()` - removed factory pattern
+   - Added clarifying comments to `handleRelay()`
+   - Uses `convertToModelMessages()` for proper type conversion
 
-## Files That Can Be Cleaned Up (Optional)
+2. **backend/agents/ResearchAgent.ts**
+   - Removed automatic `bestEffortRelay()` call
+   - Made `ensureFs()` and `bestEffortRelay()` public
+   - Simplified `handleMessage()`
+   - Added comments about sync vs async patterns
 
-Since tools are now defined inline, these factory functions in `backend/tools/schemas.ts` are no longer needed:
-- `getInteractionTools()` - Replaced by inline tool definitions
-- `getResearchTools()` - Replaced by inline tool definitions
-- `convertToAiSdkTools()` - No longer needed with explicit approach
+3. **backend/tools/agent_management.ts**
+   - Completely rewritten with `getCurrentAgent()` pattern
+   - Tools use helper methods to access env/storage
+   - Self-contained tool definitions
 
-The old JSON schemas (`TOOL_SCHEMAS`) can stay for reference or be removed.
+### Created
+4. **backend/tools/research_tools.ts**
+   - File system tools (write_file, read_file, list_files)
+   - Communication tool (send_message)
+   - Uses `getCurrentAgent()` pattern
+
+### Deleted
+5. **backend/tools/tools.ts** - Old unified file without execute functions
+6. **backend/tools/agent_management_old.ts** - Old factory pattern implementation
 
 ---
 
@@ -125,16 +175,21 @@ The old JSON schemas (`TOOL_SCHEMAS`) can stay for reference or be removed.
 ### Testing (Priority 1)
 ```bash
 npm run dev
-curl -X POST http://localhost:8787/api/chat \
+
+# Test creating research agent
+curl -X POST http://localhost:8787/agents/interaction-agent/default \
   -H "Content-Type: application/json" \
-  -d '{"message": "Research DMD treatments"}'
+  -d '{"type":"message","role":"user","parts":[{"type":"text","text":"Create a research agent for DMD"}]}'
+
+# Test messaging research agent
+# (InteractionAgent should call message_agent tool)
 ```
 
 ### Future Enhancements
-- [ ] Add unit tests for `convertToAiSdkTools`
-- [ ] Add streaming support (SSE)
-- [ ] Add telemetry for tool execution
-- [ ] Consider extracting model initialization
+- [ ] Add unit tests for tool execution
+- [ ] Implement trigger/alarm system for scheduled research
+- [ ] Add human-in-the-loop for dangerous operations (optional)
+- [ ] Add more comprehensive error handling
 
 ---
 
