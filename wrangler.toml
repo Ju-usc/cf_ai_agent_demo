@@ -9,7 +9,7 @@ enabled = true
 # Workers AI binding
 [ai]
 binding = "AI"
-# Note: AI calls will fail in local dev without remote access
+remote = true
 
 # D1 Database
 [[d1_databases]]
@@ -25,13 +25,11 @@ bucket_name = "medical-innovation-files"
 preview_bucket_name = "medical-innovation-files-preview" # Use local bucket for dev
 
 # Durable Objects
-[[durable_objects.bindings]]
-name = "INTERACTION_AGENT"
-class_name = "InteractionAgent"
-
-[[durable_objects.bindings]]
-name = "RESEARCH_AGENT"
-class_name = "ResearchAgent"
+[durable_objects]
+bindings = [
+  { name = "InteractionAgent", class_name = "InteractionAgent" },
+  { name = "ResearchAgent", class_name = "ResearchAgent" }
+]
 
 [[migrations]]
 tag = "v1"

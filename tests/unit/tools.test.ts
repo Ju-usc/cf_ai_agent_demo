@@ -55,7 +55,7 @@ describe('Agent Management Tools', () => {
     
     // Mock environment
     mockEnv = {
-      RESEARCH_AGENT: {
+      ResearchAgent: {
         idFromName: vi.fn().mockReturnValue('test-do-id'),
         get: vi.fn().mockReturnValue(mockStub),
       } as any,
@@ -83,8 +83,8 @@ describe('Agent Management Tools', () => {
       });
       
       // Verify agent creation
-      expect(mockEnv.RESEARCH_AGENT!.idFromName).toHaveBeenCalledWith('dmd_research');
-      expect(mockEnv.RESEARCH_AGENT!.get).toHaveBeenCalledWith('test-do-id');
+      expect(mockEnv.ResearchAgent!.idFromName).toHaveBeenCalledWith('dmd_research');
+      expect(mockEnv.ResearchAgent!.get).toHaveBeenCalledWith('test-do-id');
       
       // Verify initialization call via JSRPC
       expect(mockStub.initialize).toHaveBeenCalledWith(
@@ -118,7 +118,7 @@ describe('Agent Management Tools', () => {
       });
       
       // Name should be sanitized to lowercase with underscores
-      expect(mockEnv.RESEARCH_AGENT!.idFromName).toHaveBeenCalledWith('dmd_research_v2');
+      expect(mockEnv.ResearchAgent!.idFromName).toHaveBeenCalledWith('dmd_research_v2');
       expect(result.agent_id).toBe('dmd_research_v2');
     });
 
@@ -131,7 +131,7 @@ describe('Agent Management Tools', () => {
         message: 'Test',
       });
       
-      expect(mockEnv.RESEARCH_AGENT!.idFromName).toHaveBeenCalledWith('multiple_spaces');
+      expect(mockEnv.ResearchAgent!.idFromName).toHaveBeenCalledWith('multiple_spaces');
     });
 
     it('removes consecutive underscores', async () => {
@@ -143,7 +143,7 @@ describe('Agent Management Tools', () => {
         message: 'Test',
       });
       
-      expect(mockEnv.RESEARCH_AGENT!.idFromName).toHaveBeenCalledWith('underscores');
+      expect(mockEnv.ResearchAgent!.idFromName).toHaveBeenCalledWith('underscores');
     });
 
     it('handles whitespace-only name with fallback', async () => {
@@ -156,7 +156,7 @@ describe('Agent Management Tools', () => {
       });
       
       // Should fallback to 'agent'
-      expect(mockEnv.RESEARCH_AGENT!.idFromName).toHaveBeenCalledWith('agent');
+      expect(mockEnv.ResearchAgent!.idFromName).toHaveBeenCalledWith('agent');
     });
 
     it('returns error when duplicate agent name exists', async () => {
@@ -306,7 +306,7 @@ describe('Agent Management Tools', () => {
       });
       
       // Should sanitize to dmd_research_v2
-      expect(mockEnv.RESEARCH_AGENT!.idFromName).toHaveBeenCalledWith('dmd_research_v2');
+      expect(mockEnv.ResearchAgent!.idFromName).toHaveBeenCalledWith('dmd_research_v2');
     });
 
     it('throws error when agent communication fails', async () => {
@@ -349,7 +349,7 @@ describe('Research Agent Communication Tools', () => {
     
     // Mock environment
     mockEnv = {
-      INTERACTION_AGENT: {
+      InteractionAgent: {
         idFromName: vi.fn().mockReturnValue('interaction-agent-id'),
         get: vi.fn().mockReturnValue(mockInteractionStub),
       } as any,
@@ -388,8 +388,8 @@ describe('Research Agent Communication Tools', () => {
       // Replace bestEffortRelay with actual implementation that catches errors
       (mockResearchAgent.bestEffortRelay as any) = async (message: string) => {
         try {
-          const iaId = mockEnv.INTERACTION_AGENT!.idFromName('default');
-          const ia = mockEnv.INTERACTION_AGENT!.get(iaId);
+          const iaId = mockEnv.InteractionAgent!.idFromName('default');
+          const ia = mockEnv.InteractionAgent!.get(iaId);
           await ia.relay(mockResearchAgent.state?.name ?? 'unknown', message);
         } catch {
           // ignore relay errors - best effort
