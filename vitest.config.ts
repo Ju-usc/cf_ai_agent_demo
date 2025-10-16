@@ -2,6 +2,13 @@ import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 
 export default defineWorkersConfig({
   test: {
+    deps: {
+      optimizer: {
+        ssr: {
+          include: ['ajv'],
+        },
+      },
+    },
     poolOptions: {
       workers: {
         singleWorker: true,
@@ -14,6 +21,12 @@ export default defineWorkersConfig({
             INTERACTION_AGENT: 'InteractionAgent',
             RESEARCH_AGENT: 'ResearchAgent',
           },
+          migrations: [
+            {
+              tag: 'v1',
+              new_sqlite_classes: ['InteractionAgent', 'ResearchAgent'],
+            },
+          ],
         },
       },
     },

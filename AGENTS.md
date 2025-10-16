@@ -121,6 +121,14 @@ See `tests/TESTS.md` for detailed testing patterns and examples.
 
 ---
 
+## Git Workflow Rules
+
+**CRITICAL: Never commit or push without explicit user permission**
+
+* ❌ **DO NOT** commit changes on your own initiative
+* ❌ **DO NOT** push to remote without user approval
+---
+
 ## Writing style 
 
 - Avoid long bullet lists.

@@ -9,17 +9,20 @@ enabled = true
 # Workers AI binding
 [ai]
 binding = "AI"
+# Note: AI calls will fail in local dev without remote access
 
 # D1 Database
 [[d1_databases]]
 binding = "DB"
 database_name = "medical-innovation-db"
 database_id = "" # Fill after: wrangler d1 create medical-innovation-db
+preview_database_id = "local-db" # Use local database for dev
 
 # R2 Storage
 [[r2_buckets]]
 binding = "R2"
 bucket_name = "medical-innovation-files"
+preview_bucket_name = "medical-innovation-files-preview" # Use local bucket for dev
 
 # Durable Objects
 [[durable_objects.bindings]]
