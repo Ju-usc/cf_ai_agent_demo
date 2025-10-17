@@ -14,7 +14,7 @@ export default function Chat() {
     error,
     stop,
   } = useChat({
-    api: `${API_URL}/agents/interaction/main`,
+    api: `${API_URL}/api/chat`,
     onError: (err) => {
       console.error('Chat error:', err);
     },

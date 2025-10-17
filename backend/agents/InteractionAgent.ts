@@ -22,6 +22,7 @@ export class InteractionAgent extends AIChatAgent<Env> {
     return this.ctx.storage;
   }
 
+
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
     _options?: { abortSignal?: AbortSignal }
