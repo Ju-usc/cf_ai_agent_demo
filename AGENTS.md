@@ -139,7 +139,8 @@ See `tests/TESTS.md` for detailed testing patterns and examples.
 - Provide enough context for the User to understand, but keep explanations short.
 - Always state your assumptions and conclusions clearly.
 - When user asks follow-up questions or requests explanations, answer directly in conversation. Do NOT create markdown files unless explicitly asked.
-
+- Sacrifice grammar for the sake of concision.
+- List any unresolved questions at the end, if any.
 ---
 
 ## Help the user learn
