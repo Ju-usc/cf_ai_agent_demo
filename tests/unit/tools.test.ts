@@ -388,7 +388,7 @@ describe('Research Agent Communication Tools', () => {
       // Replace bestEffortRelay with actual implementation that catches errors
       (mockResearchAgent.bestEffortRelay as any) = async (message: string) => {
         try {
-          const iaId = mockEnv.InteractionAgent!.idFromName('default');
+          const iaId = mockEnv.InteractionAgent!.idFromName('main');
           const ia = mockEnv.InteractionAgent!.get(iaId);
           await ia.relay(mockResearchAgent.state?.name ?? 'unknown', message);
         } catch {

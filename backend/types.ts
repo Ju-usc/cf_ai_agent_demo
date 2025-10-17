@@ -1,3 +1,4 @@
+import type { AgentNamespace } from 'agents';
 import type { InteractionAgent } from './agents/InteractionAgent';
 import type { ResearchAgent } from './agents/ResearchAgent';
 
@@ -6,8 +7,8 @@ export interface Env {
   AI: Ai;
   DB: D1Database;
   R2: R2Bucket;
-  InteractionAgent: DurableObjectNamespace<InteractionAgent>;
-  ResearchAgent: DurableObjectNamespace<ResearchAgent>;
+  InteractionAgent: AgentNamespace<InteractionAgent>;
+  ResearchAgent: AgentNamespace<ResearchAgent>;
   PERPLEXITY_API_KEY?: string;
   EMAIL_API_KEY?: string;
   // AI provider config
