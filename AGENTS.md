@@ -204,3 +204,39 @@ Make sure in each tasks/ folder, we have research.md, plan.md, review.md files. 
 - Do this by running tests, making tool calls and checking the output.
 - If there are any issues, go back to the implementation step and make the necessary changes.
 - Once verified, update the task status to "verified".
+
+---
+
+## Documentation Rules
+
+**CRITICAL: Avoid creating unnecessary markdown files.**
+
+### Where to Write Docs
+
+1. **`/docs/` folder** - Reusable, long-term documentation
+   - Be VERY strict about creating new docs here
+   - Try to UPDATE existing docs instead of creating new ones
+   - Only create new docs if truly necessary and reusable
+   - Examples: architecture patterns, API guides, SDK integration patterns
+
+2. **`/tasks/<task-id>/` folder** - Task-specific research/planning
+   - Create `research.md`, `plan.md` for task work
+   - These are temporary and task-scoped
+
+3. **NEVER create .md files in:**
+   - ❌ Root directory (no `SUMMARY.md`, `NOTES.md`, `COMMIT_SUMMARY.md`, etc.)
+   - ❌ Random subdirectories
+   - ❌ As "summaries" or "notes" for the user
+
+### Communication Rules
+
+- When user asks questions or needs summaries → **respond in CONVERSATION**, not markdown files
+- When finishing a session → **respond in CONVERSATION** with brief summary
+- Don't create markdown files to "document what we did" unless it's reusable technical documentation
+
+### Exception
+
+Creating documentation like `FRONTEND_AI_SDK_V5.md` in `/docs/` is GOOD because it's:
+- Reusable reference material
+- Technical patterns that will be needed again
+- Not a one-time summary or notes

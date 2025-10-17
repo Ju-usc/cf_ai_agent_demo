@@ -3,6 +3,10 @@ main = "backend/index.ts"
 compatibility_date = "2024-10-14"
 compatibility_flags = ["nodejs_compat"]
 
+# Development server config
+[dev]
+port = 8787
+
 [observability]
 enabled = true
 

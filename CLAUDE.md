@@ -140,12 +140,14 @@ AI providers are configurable via `backend/agents/modelFactory.ts`:
 - `backend/db/schema.sql` - D1 schema (research_agents, triggers, agent_events)
 
 ### Frontend (React + Vite)
-- `frontend/src/pages/ChatPage.jsx` - Main chat interface with streaming
-- `frontend/src/pages/DashboardPage.jsx` - Agent registry view
-- Entry points: `frontend/src/main.{tsx,js}` + `frontend/src/App.{tsx,js}`
+- `frontend/src/pages/Chat.tsx` - Main chat interface with streaming (AI SDK v5)
+- `frontend/src/pages/Dashboard.tsx` - Agent registry view
+- `frontend/src/lib/api.ts` - API configuration and helpers
+- Entry points: `frontend/src/main.tsx` + `frontend/src/App.tsx`
 
 ### Documentation
 - `docs/ARCHITECTURE.md` - Full system design (tool contracts, data models, flows)
+- `docs/FRONTEND_AI_SDK_V5.md` - Frontend AI SDK v5 integration patterns ⭐ NEW
 - `docs/MVP_PLAN.md` - Implementation roadmap
 - `AGENTS.md` - Development guidelines (read this for workflow patterns)
 

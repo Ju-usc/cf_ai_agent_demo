@@ -10,9 +10,12 @@ export default {
     const url = new URL(request.url);
 
     // Debug logging
-    console.log('Incoming request:', {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('[Worker] 📥 Incoming request:', {
       method: request.method,
-      url: url.pathname,
+      pathname: url.pathname,
+      fullURL: request.url,
+      headers: Object.fromEntries(request.headers.entries()),
       bindings: Object.keys(env).filter(key => key.includes('Agent'))
     });
 
@@ -24,6 +27,7 @@ export default {
     };
 
     if (request.method === 'OPTIONS') {
+      console.log('[Worker] 🔀 CORS preflight, returning OK');
       return new Response(null, { headers: corsHeaders });
     }
 
@@ -76,28 +80,39 @@ export default {
 
     // Backward compatibility: /api/chat -> InteractionAgent via kebab-case route
     if (url.pathname === '/api/chat' && request.method === 'POST') {
+      console.log('[Worker] 🔄 /api/chat -> routing to InteractionAgent');
       try {
-        // Create kebab-case agent URL and route through agents SDK
+        // Read body once and create new request with cloned body
+        const body = await request.text();
+        console.log('[Worker] 📦 Request body:', body.substring(0, 200));
+
         const agentUrl = new URL(request.url);
-        agentUrl.pathname = '/agents/interaction-agent/main/chat';
+        agentUrl.pathname = '/agents/interaction-agent/main';
+        console.log('[Worker] 🎯 Routing to:', agentUrl.pathname);
 
         const agentRequest = new Request(agentUrl.toString(), {
-          method: request.method,
+          method: 'POST',
           headers: request.headers,
-          body: request.body,
+          body: body,
         });
 
+        console.log('[Worker] 📡 Calling routeAgentRequest...');
         const routed = await routeAgentRequest(agentRequest, env, { cors: true });
         if (routed) {
+          console.log('[Worker] ✅ Successfully routed to agent');
+          console.log('[Worker] Response status:', routed.status);
+          console.log('[Worker] Response headers:', Object.fromEntries(routed.headers.entries()));
           return routed;
         }
 
+        console.error('[Worker] ❌ routeAgentRequest returned null');
         return Response.json({ error: 'Agent routing failed' }, {
           status: 500,
           headers: corsHeaders
         });
       } catch (error) {
-        console.error('Error routing /api/chat:', error);
+        console.error('[Worker] ❌ Error routing /api/chat:', error);
+        console.error('[Worker] Error stack:', (error as Error).stack);
         return Response.json({ error: `Chat routing error: ${error}` }, {
           status: 500,
           headers: corsHeaders
