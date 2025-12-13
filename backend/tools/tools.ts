@@ -64,8 +64,8 @@ export const create_agent = tool({
     }
 
     const env = agent.getEnv();
-    const doId = env.RESEARCH_AGENT.idFromName(idName);
-    const stub = env.RESEARCH_AGENT.get(doId);
+    const doId = env.ResearchAgent.idFromName(idName);
+    const stub = env.ResearchAgent.get(doId);
 
     try {
       await stub.initialize(idName, description, message);
@@ -117,8 +117,8 @@ export const message_to_research_agent = tool({
 
     const idName = sanitizeName(agent_id);
     const env = agent.getEnv();
-    const doId = env.RESEARCH_AGENT.idFromName(idName);
-    const stub = env.RESEARCH_AGENT.get(doId);
+    const doId = env.ResearchAgent.idFromName(idName);
+    const stub = env.ResearchAgent.get(doId);
 
     // JSRPC: Direct method call instead of HTTP
     const reply = await stub.sendMessage(message);
@@ -220,4 +220,6 @@ export const researchTools = {
   message_to_interaction_agent,
 } satisfies ToolSet;
 
+// Tool executions for approval workflow (currently unused - reserved for future tool gating feature)
+// When implemented, this will allow tools to require user approval before execution
 export const toolExecutions: ExecutionsMap = {};

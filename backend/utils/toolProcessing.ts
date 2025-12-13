@@ -18,6 +18,11 @@ function isValidToolName<K extends PropertyKey, T extends object>(key: K, obj: T
   return key in obj;
 }
 
+/**
+ * Process tool calls with optional approval workflow
+ * Currently unused - executions map is empty, so this returns messages unchanged
+ * Reserved for future feature: tool approval/gating before execution
+ */
 export async function processToolCalls<Tools extends ToolSet>({
   dataStream,
   messages,
@@ -28,6 +33,7 @@ export async function processToolCalls<Tools extends ToolSet>({
   messages: UIMessage[];
   executions: ExecutionsMap;
 }): Promise<UIMessage[]> {
+  // Early return if no approval workflow is configured
   if (!executions || Object.keys(executions).length === 0) {
     return messages;
   }

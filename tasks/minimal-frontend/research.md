@@ -116,3 +116,38 @@ frontend/
 - Error boundaries
 - Message persistence
 - Advanced styling
+
+## Backend Contract Deep Dive
+
+- `routeAgentRequest` already exposes `/agents/interaction/:id` for chat; responses stream with `text/plain` and SSE semantics expected by `useChat`.
+- Agent registry is persisted under Durable Object storage key `agent_registry`; entries match `AgentRegistryEntry` in `backend/types.ts` (id, name, description, timestamps).
+- Existing CORS handling in `backend/index.ts` returns `*` origin for `GET/POST/OPTIONS`. Any new route must preserve the same headers to avoid blockers in local/dev Pages preview.
+- Health check at `/health` confirms worker availability; useful for frontend startup guard.
+
+## Frontend Integration Notes
+
+- Base API URL should be configurable via `VITE_API_URL` to support local dev (`http://localhost:8787`) and future staging endpoints without code changes.
+- `useChat` expects POSTing to `/agents/interaction/main/message`; the SDK appends `/message` automatically when using `api` prop set to `.../main`.
+- Tailwind best practice: keep layout wrappers in `App.tsx`; page components focus on their main content to avoid duplicated shell markup.
+- React Router v6 `BrowserRouter` works with Cloudflare Pages (supports pushState); ensure `vite.config.ts` sets `base` if we later deploy under subpath.
+
+## Alternative Approaches Considered
+
+| Option | Pros | Cons | Decision |
+| --- | --- | --- | --- |
+| `fetch` + manual state | Full control, no dependency | Requires manual streaming handling, optimistic updates, and tool-call parsing | Rejected for MVP |
+| Redux / Zustand for chat state | Centralized state | Overkill for two pages, adds boilerplate | Defer |
+| CSS-in-JS (e.g., Emotion) | Co-locate styles | Slower runtime, inconsistent with backend Tailwind usage | Reject |
+| shadcn/ui | Prebuilt polished components | Setup overhead, theming work, import weight | Defer to V2 |
+
+## Open Questions / Risks
+
+1. **Agent registry shape**: confirm no nested objects beyond `description` to avoid extra parsing. Solution: log sample entry via Wrangler console before wiring frontend.
+2. **Streaming Abort**: `useChat` `stop()` should abort Worker response; verify workers supports `AbortController` to prevent leaking durable execution.
+3. **Tool Output Rendering**: Current InteractionAgent emits tool-call parts; need to ensure they serialize correctly (fallback to simple text indicator if shape changes).
+
+## Testing References
+
+- `tests/unit/tools.test.ts` validates tool execution pipeline; ensures backend tool metadata remains consistent with frontend expectations (e.g., `toolName`).
+- `wrangler dev` supports `--persist-to` for Durable Objects; helpful when validating dashboard refresh retaining agents.
+- Use `npm run build` inside `frontend/` to catch TS + Vite config errors; CI currently runs `npm run test` at root only, so local verification is required.

@@ -7,8 +7,8 @@ export interface Env {
   AI: Ai;
   DB: D1Database;
   R2: R2Bucket;
-  INTERACTION_AGENT: AgentNamespace<InteractionAgent>;
-  RESEARCH_AGENT: AgentNamespace<ResearchAgent>;
+  InteractionAgent: AgentNamespace<InteractionAgent>;
+  ResearchAgent: AgentNamespace<ResearchAgent>;
   PERPLEXITY_API_KEY?: string;
   EMAIL_API_KEY?: string;
   // AI provider config

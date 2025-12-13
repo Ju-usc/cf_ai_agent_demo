@@ -88,8 +88,8 @@ export class ResearchAgent extends Agent<Env, ResearchState> {
   // Best-effort relay using JSRPC
   async bestEffortRelay(message: string): Promise<void> {
     try {
-      const iaId = this.env.INTERACTION_AGENT.idFromName('default');
-      const ia = this.env.INTERACTION_AGENT.get(iaId);
+      const iaId = this.env.InteractionAgent.idFromName('main');
+      const ia = this.env.InteractionAgent.get(iaId);
       await ia.relay(this.state?.name ?? 'unknown', message);
     } catch {
       // ignore relay errors
